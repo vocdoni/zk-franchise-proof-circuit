@@ -53,7 +53,7 @@ function log2(a) {
     let n = 1;
     let r = 1;
     while (n<a) {
-        r++;
+        r+=1;
         n *= 2;
     }
     return r;
@@ -66,7 +66,7 @@ template EscalarProduct(w) {
     signal output out;
     signal aux[w];
     var lc = 0;
-    for (var i=0; i<w; i++) {
+    for (var i=0; i<w; i+=1) {
         aux[i] <== in1[i]*in2[i];
         lc = lc + aux[i];
     }
@@ -79,7 +79,7 @@ template Decoder(w) {
     signal output success;
     var lc=0;
 
-    for (var i=0; i<w; i++) {
+    for (var i=0; i<w; i+=1) {
         out[i] <-- (inp == i) ? 1 : 0;
         out[i] * (inp-i) === 0;
         lc = lc + out[i];
@@ -97,13 +97,13 @@ template Multiplexer(wIn, nIn) {
     component dec = Decoder(nIn);
     component ep[wIn];
 
-    for (var k=0; k<wIn; k++) {
+    for (var k=0; k<wIn; k+=1) {
         ep[k] = EscalarProduct(nIn);
     }
 
     sel ==> dec.inp;
-    for (var j=0; j<wIn; j++) {
-        for (var k=0; k<nIn; k++) {
+    for (var j=0; j<wIn; j+=1) {
+        for (var k=0; k<nIn; k+=1) {
             inp[k][j] ==> ep[j].in1[k];
             dec.out[k] ==> ep[j].in2[k];
         }

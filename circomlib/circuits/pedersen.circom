@@ -126,7 +126,7 @@ template Segment(nWindows) {
     component doublers1[nWindows-1];
     component doublers2[nWindows-1];
     component adders[nWindows-1];
-    for (i=0; i<nWindows; i++) {
+    for (i=0; i<nWindows; i+=1) {
         windows[i] = Window4();
         if (i==0) {
             windows[i].base[0] <== e2m.out[0];
@@ -153,7 +153,7 @@ template Segment(nWindows) {
             adders[i-1].in2[0] <== windows[i].out[0];
             adders[i-1].in2[1] <== windows[i].out[1];
         }
-        for (j=0; j<4; j++) {
+        for (j=0; j<4; j+=1) {
             windows[i].in[j] <== in[4*i+j];
         }
     }
@@ -197,24 +197,24 @@ template Pedersen(n) {
     var j;
     var nBits;
     var nWindows;
-    for (i=0; i<nSegments; i++) {
+    for (i=0; i<nSegments; i+=1) {
         nBits = (i == (nSegments-1)) ? n - (nSegments-1)*200 : 200;
         nWindows = ((nBits - 1)\4)+1;
         segments[i] = Segment(nWindows);
         segments[i].base[0] <== BASE[i][0];
         segments[i].base[1] <== BASE[i][1];
-        for (j = 0; j<nBits; j++) {
+        for (j = 0; j<nBits; j+=1) {
             segments[i].in[j] <== in[i*200+j];
         }
         // Fill padding bits
-        for (j = nBits; j < nWindows*4; j++) {
+        for (j = nBits; j < nWindows*4; j+=1) {
             segments[i].in[j] <== 0;
         }
     }
 
     component adders[nSegments-1];
 
-    for (i=0; i<nSegments-1; i++) {
+    for (i=0; i<nSegments-1; i+=1) {
         adders[i] = BabyAdd();
         if (i==0) {
             adders[i].x1 <== segments[0].out[0];
