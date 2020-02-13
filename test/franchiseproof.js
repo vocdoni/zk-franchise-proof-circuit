@@ -34,7 +34,7 @@ describe("FranchiseProof", function () {
         const input = await voter.getInput(votingId, voteValue, poi);
 
         circuit = new snarkjs.Circuit(cirDef);
-	    const w = circuit.calculateWitness(input);
+	const w = circuit.calculateWitness(input);
         assert(circuit.checkWitness(w));
     })
 
@@ -61,6 +61,7 @@ describe("FranchiseProof", function () {
         for (let n=0;n<census.authorities.length;n++) {
             input.gnullifier.push(census.authorities[n].pvk);
         }
+	console.log(input)
         assert.doesNotThrow(()=>circuit.calculateWitness(input));
 
         // check fails with one altered nullifier

@@ -1,12 +1,6 @@
-include "../circomlib/circuits/babyjub.circom";
 include "../circomlib/circuits/comparators.circom";
-include "../circomlib/circuits/poseidon.circom";
-include "../circomlib/circuits/bitify.circom";
-include "../circomlib/circuits/escalarmulfix.circom";
 include "../circomlib/circuits/eddsaposeidon.circom";
 include "../circomlib/circuits/smt/smtverifier.circom";
-include "../circomlib/circuits/smt/smtprocessor.circom";
-include "../circomlib/circuits/binsum.circom";
 
 template NullifierMultisig(N) {
 
@@ -27,13 +21,13 @@ template NullifierMultisig(N) {
         pbkcheck[n].in[1] <== commitment[n];
 
         if (n == 0) {
-            count[0] <-- pbkcheck[n].out;
+            count[0] <== pbkcheck[n].out;
         } else {
-            count[n] <-- pbkcheck[n].out + count[n-1];
+            count[n] <== pbkcheck[n].out + count[n-1];
         }
     }
 
-    component countcheck = IsEqual()
+    component countcheck = IsEqual();
     countcheck.in[0] <== count[N-1];
     countcheck.in[1] <== N;
 
@@ -62,14 +56,14 @@ template FranchiseProof(nLevels, nAuth) {
     signal private input gnullifier[nAuth];
 
     component gnullcheck = NullifierMultisig(nAuth);
-    for (var n=0;n<nAuth;n++)  {
+    for (var n=0;n<nAuth;n+=1)  {
         gnullcheck.commitment[n] <== gcommitment[n];
         gnullcheck.nullifier[n] <== gnullifier[n];
     }
     
     signal verify;
     verify <== 1 - gnullcheck.success;
-    
+
     // -- extract public key -------------------------------------------
     component pbk = BabyPbk();
     pbk.in <== privateKey;
@@ -106,7 +100,7 @@ template FranchiseProof(nLevels, nAuth) {
 
     // root and siblings
     smtCensusInclusion.root <== censusRoot;
-    for (var i=0; i<nLevels; i++) {
+    for (var i=0; i<nLevels; i+=1) {
         smtCensusInclusion.siblings[i] <==  censusSiblings[i];
     }
 
@@ -127,5 +121,4 @@ template FranchiseProof(nLevels, nAuth) {
     nullifierCheck.enabled <== verify;
     nullifierCheck.in[0] <== nullifier;
     nullifierCheck.in[1] <== hashPvkVid.out;
-    
 }

@@ -63,7 +63,9 @@ template SMTVerifier(nLevels) {
     n2bNew.in <== key;
 
     component smtLevIns = SMTLevIns(nLevels);
-    for (var i=0; i<nLevels; i+=1) smtLevIns.siblings[i] <== siblings[i];
+    for (var i=0; i<nLevels; i+=1) {
+        smtLevIns.siblings[i] <== siblings[i];
+    }
     smtLevIns.enabled <== enabled;
 
     component sm[nLevels];
