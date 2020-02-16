@@ -1,7 +1,7 @@
 const bigInt = require("../node_modules/snarkjs").bigInt;
 const { assert } = require("chai");
 const createBlakeHash = require("blake-hash");
-const { babyJub, eddsa, smt, poseidon } = require("../circomlib");
+const { babyJub, eddsa, smt, poseidon } = require("../za/interop/circuits/circomlib");
 
 const hash = poseidon.createHash(6, 8, 57);
 

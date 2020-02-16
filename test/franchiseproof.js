@@ -61,7 +61,6 @@ describe("FranchiseProof", function () {
         for (let n=0;n<census.authorities.length;n++) {
             input.gnullifier.push(census.authorities[n].pvk);
         }
-	console.log(input)
         assert.doesNotThrow(()=>circuit.calculateWitness(input));
 
         // check fails with one altered nullifier

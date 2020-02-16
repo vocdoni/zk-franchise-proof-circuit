@@ -1,6 +1,6 @@
-include "../circomlib/circuits/comparators.circom";
-include "../circomlib/circuits/eddsaposeidon.circom";
-include "../circomlib/circuits/smt/smtverifier.circom";
+include "../za/interop/circuits/circomlib/circuits/comparators.circom";
+include "../za/interop/circuits/circomlib/circuits/eddsaposeidon.circom";
+include "../za/interop/circuits/circomlib/circuits/smt/smtverifier.circom";
 
 template NullifierMultisig(N) {
 
