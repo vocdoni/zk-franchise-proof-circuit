@@ -45,7 +45,9 @@ include "../node_modules/circomlib/circuits/bitify.circom";
 include "../node_modules/circomlib/circuits/smt/smtverifier.circom";
 include "../node_modules/circomlib/circuits/smt/smtprocessor.circom";
 
-/* include "../node_modules/iden3/circuits/circuits/buildClaimKeyBBJJ.circom"; // TODO import from iden3/circuits */
+/* include "../node_modules/iden3/circuits/circuits/buildClaimKeyBBJJ.circom"; // TODO import from iden3/circuits npm package */
+/* include "../../../iden3/circuits/circuits/buildClaimKeyBBJJ.circom"; */
+include "buildClaimKeyBBJJ.circom";
 
 template Census(nLevels) { // nAuth
 	signal input censusRoot;
@@ -69,29 +71,22 @@ template Census(nLevels) { // nAuth
 	babyPbk.in <== privateKey;
 
 	// verify vote signature
-	component signVerification = EdDSAPoseidonVerifier();
-	signVerification.enabled <== 1 // tmp depends on nullifier-multisig
-	sigVerification.Ax <== babyPbk.Ax;
-	sigVerification.Ay <== babyPbk.Ay;
-	sigVerification.S <== voteSigS;
-	sigVerification.R8x <== voteSigR8x;
-	sigVerification.R8y <== voteSigR8y;
-	sigVerification.M <== voteValue;
 
 	// build ClaimCensus
-	component claimCensus = BuildClaimAuthKSignBBJJ();
-	claimCensus.sign <== 1; // TODO
+	component claimCensus = BuildClaimKeyBBJJ(1);
+	claimCensus.ax <== babyPbk.Ax;
 	claimCensus.ay <== babyPbk.Ay;
-
+	
 	component smtClaimExists = SMTVerifier(nLevels);
 	smtClaimExists.enabled <== 1; // tmp depends on nullifier-multisig
 	smtClaimExists.fnc <== 0; // 0 as is to verify inclusion
+	smtClaimExists.root <== censusRoot;
+	for (var i=0; i<nLevels; i++) {
+		smtClaimExists.siblings[i] <== censusSiblings[i];
+	}
 	smtClaimExists.oldKey <== 0;
 	smtClaimExists.oldValue <== 0;
 	smtClaimExists.isOld0 <== 0;
-	for (var i=0; i<nLevels; i++) {
-		smtClaimExists.siblings[i] <== censusSiblings[nLevels];
-	}
-	smtClaimExists.key <== claim.hi;
-	smtClaimExists.value <== claim.hv;
+	smtClaimExists.key <== claimCensus.hi;
+	smtClaimExists.value <== claimCensus.hv;
 }
