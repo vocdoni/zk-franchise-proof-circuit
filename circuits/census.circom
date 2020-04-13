@@ -44,10 +44,11 @@ include "../node_modules/circomlib/circuits/poseidon.circom";
 include "../node_modules/circomlib/circuits/bitify.circom";
 include "../node_modules/circomlib/circuits/smt/smtverifier.circom";
 include "../node_modules/circomlib/circuits/smt/smtprocessor.circom";
+include "../node_modules/circomlib/circuits/eddsaposeidon.circom";
 
 /* include "../node_modules/iden3/circuits/circuits/buildClaimKeyBBJJ.circom"; // TODO import from iden3/circuits npm package */
 /* include "../../../iden3/circuits/circuits/buildClaimKeyBBJJ.circom"; */
-include "buildClaimKeyBBJJ.circom";
+include "buildClaimKeyBBJJ.circom"; // tmp
 
 template Census(nLevels) { // nAuth
 	signal input censusRoot;
@@ -71,9 +72,17 @@ template Census(nLevels) { // nAuth
 	babyPbk.in <== privateKey;
 
 	// verify vote signature
+	component sigVerification = EdDSAPoseidonVerifier();
+	sigVerification.enabled <== 1 // tmp depends on nullifier-multisig
+	sigVerification.Ax <== babyPbk.Ax;
+	sigVerification.Ay <== babyPbk.Ay;
+	sigVerification.S <== voteSigS;
+	sigVerification.R8x <== voteSigR8x;
+	sigVerification.R8y <== voteSigR8y;
+	sigVerification.M <== voteValue;
 
 	// build ClaimCensus
-	component claimCensus = BuildClaimKeyBBJJ(1);
+	component claimCensus = BuildClaimKeyBBJJ(0);
 	claimCensus.ax <== babyPbk.Ax;
 	claimCensus.ay <== babyPbk.Ay;
 	
@@ -89,4 +98,15 @@ template Census(nLevels) { // nAuth
 	smtClaimExists.isOld0 <== 0;
 	smtClaimExists.key <== claimCensus.hi;
 	smtClaimExists.value <== claimCensus.hv;
+
+	// check nullifier
+	component computedNullifier = Poseidon(2, 6, 8, 57);
+	computedNullifier.inputs[0] <== privateKey;
+	computedNullifier.inputs[1] <== electionId;
+	component checkNullifier = IsEqual();
+	checkNullifier.in[0] <== computedNullifier.out;
+	checkNullifier.in[1] <== nullifier;
+	checkNullifier.out === 1;
+
+
 }

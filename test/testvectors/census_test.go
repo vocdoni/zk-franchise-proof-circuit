@@ -11,6 +11,7 @@ import (
 	"github.com/iden3/go-iden3-core/db"
 	"github.com/iden3/go-iden3-core/merkletree"
 	"github.com/iden3/go-iden3-crypto/babyjub"
+	"github.com/iden3/go-iden3-crypto/poseidon"
 	cryptoUtils "github.com/iden3/go-iden3-crypto/utils"
 	"github.com/stretchr/testify/assert"
 )
@@ -65,18 +66,31 @@ func TestCensus(t *testing.T) {
 	// censusRoot := new(big.Int).SetBytes(common3.SwapEndianness(censusTree.RootKey().Bytes()))
 
 	// sign vote with PrivateKey
+	vote := big.NewInt(1)
+	voteSig := k.SignPoseidon(vote)
+
+	// compute nullifier
+	electionId := big.NewInt(10)
+	nullifier, err := poseidon.PoseidonHash([poseidon.T]*big.Int{
+		skToBigInt(&k),
+		electionId,
+		big.NewInt(0),
+		big.NewInt(0),
+		big.NewInt(0),
+		big.NewInt(0),
+	})
 
 	fmt.Println("--- copy & paste into census.test.js ---")
 	fmt.Printf(`censusRoot: "%s",`+"\n", new(big.Int).SetBytes(common3.SwapEndianness(censusTree.RootKey().Bytes())))
 	fmt.Printf(`censusSiblings: ["0", "0", "0", "0"],` + "\n") // TMP
 	fmt.Printf(`privateKey: "%s",`+"\n", skToBigInt(&k))
 
-	fmt.Printf(`voteSigS: "%s",`+"\n", "tmp")
-	fmt.Printf(`voteSigR8x: "%s",`+"\n", "tmp")
-	fmt.Printf(`voteSigR8y: "%s",`+"\n", "tmp")
-	fmt.Printf(`voteValue: "%s",`+"\n", "tmp")
-	fmt.Printf(`electionId: "%s",`+"\n", "tmp")
-	fmt.Printf(`nullifier: "%s"`+"\n", "tmp")
+	fmt.Printf(`voteSigS: "%s",`+"\n", voteSig.S.String())
+	fmt.Printf(`voteSigR8x: "%s",`+"\n", voteSig.R8.X.String())
+	fmt.Printf(`voteSigR8y: "%s",`+"\n", voteSig.R8.Y.String())
+	fmt.Printf(`voteValue: "%s",`+"\n", vote.String())
+	fmt.Printf(`electionId: "%s",`+"\n", electionId.String())
+	fmt.Printf(`nullifier: "%s"`+"\n", nullifier.String())
 	fmt.Println("--- end of copy & paste to census.test.js ---")
 
 }
