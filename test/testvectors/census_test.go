@@ -18,31 +18,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func pruneBuffer(buf *[32]byte) *[32]byte {
-	buf[0] = buf[0] & 0xF8
-	buf[31] = buf[31] & 0x7F
-	buf[31] = buf[31] | 0x40
-	return buf
-}
-
-func skToBigInt(k *babyjub.PrivateKey) *big.Int {
-	sBuf := babyjub.Blake512(k[:])
-	sBuf32 := [32]byte{}
-	copy(sBuf32[:], sBuf[:32])
-	pruneBuffer(&sBuf32)
-	s := new(big.Int)
-	cryptoUtils.SetBigIntFromLEBytes(s, sBuf32[:])
-	s.Rsh(s, 3)
-	return s
-}
-
 func TestCensus(t *testing.T) {
-	testCensus(t, 3, 0)
-	testCensus(t, 9, 10)
-	testCensus(t, 19, 1000)
+	testCensus(t, 3, 1, 0)
+	testCensus(t, 9, 10, 10)
+	testCensus(t, 19, 50, 1000)
 }
 
-func testCensus(t *testing.T, nLevels, nPaddingClaims int) {
+func testCensus(t *testing.T, nLevels, nMiners, nPaddingClaims int) {
 	fmt.Println("\n-------\nCensus test vectors:")
 
 	// new babyjubjub PrivateKey
@@ -121,6 +103,38 @@ func testCensus(t *testing.T, nLevels, nPaddingClaims int) {
 		big.NewInt(0),
 	})
 
+	// revealKey & commitKey
+	var revealKey []*big.Int
+	var commitKey []*big.Int
+	for i := 0; i < nMiners; i++ {
+		rk := big.NewInt(int64(i))
+		ck, err := poseidon.PoseidonHash([poseidon.T]*big.Int{
+			rk,
+			big.NewInt(0),
+			big.NewInt(0),
+			big.NewInt(0),
+			big.NewInt(0),
+			big.NewInt(0),
+		})
+		assert.Nil(t, err)
+
+		revealKey = append(revealKey, rk)
+		commitKey = append(commitKey, ck)
+	}
+	for i := 0; i < nMiners; i++ {
+
+	}
+	var revealKeyStr []string
+	var commitKeyStr []string
+	for i := 0; i < nMiners; i++ {
+		revealKeyStr = append(revealKeyStr, revealKey[i].String())
+		commitKeyStr = append(commitKeyStr, commitKey[i].String())
+	}
+	jsonRevealKey, err := json.Marshal(revealKeyStr)
+	assert.Nil(t, err)
+	jsonCommitKey, err := json.Marshal(commitKeyStr)
+	assert.Nil(t, err)
+
 	fmt.Println("--- copy & paste into census.test.js ---")
 	fmt.Printf(`censusRoot: "%s",`+"\n", new(big.Int).SetBytes(common3.SwapEndianness(censusTree.RootKey().Bytes())))
 	fmt.Printf(`censusSiblings: %s,`+"\n", jsonSiblings) // TMP
@@ -134,6 +148,26 @@ func testCensus(t *testing.T, nLevels, nPaddingClaims int) {
 	fmt.Printf(`nullifier: "%s",`+"\n", nullifier.String())
 	fmt.Printf(`relayerPublicKey: "%s",`+"\n", relayerPublicKey.String())
 	fmt.Printf(`relayerProof: "%s",`+"\n", relayerProof.String())
+	fmt.Printf(`revealKey: %s,`+"\n", jsonRevealKey)
+	fmt.Printf(`commitKey: %s`+"\n", jsonCommitKey)
 	fmt.Println("--- end of copy & paste to census.test.js ---")
 
+}
+
+func pruneBuffer(buf *[32]byte) *[32]byte {
+	buf[0] = buf[0] & 0xF8
+	buf[31] = buf[31] & 0x7F
+	buf[31] = buf[31] | 0x40
+	return buf
+}
+
+func skToBigInt(k *babyjub.PrivateKey) *big.Int {
+	sBuf := babyjub.Blake512(k[:])
+	sBuf32 := [32]byte{}
+	copy(sBuf32[:], sBuf[:32])
+	pruneBuffer(&sBuf32)
+	s := new(big.Int)
+	cryptoUtils.SetBigIntFromLEBytes(s, sBuf32[:])
+	s.Rsh(s, 3)
+	return s
 }
