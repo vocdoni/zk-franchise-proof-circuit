@@ -110,6 +110,17 @@ func testCensus(t *testing.T, nLevels, nPaddingClaims int) {
 		big.NewInt(0),
 	})
 
+	// relayerPublicKey & relayerProof
+	relayerPublicKey := big.NewInt(100)
+	relayerProof, err := poseidon.PoseidonHash([poseidon.T]*big.Int{
+		nullifier,
+		relayerPublicKey,
+		big.NewInt(0),
+		big.NewInt(0),
+		big.NewInt(0),
+		big.NewInt(0),
+	})
+
 	fmt.Println("--- copy & paste into census.test.js ---")
 	fmt.Printf(`censusRoot: "%s",`+"\n", new(big.Int).SetBytes(common3.SwapEndianness(censusTree.RootKey().Bytes())))
 	fmt.Printf(`censusSiblings: %s,`+"\n", jsonSiblings) // TMP
@@ -120,7 +131,9 @@ func testCensus(t *testing.T, nLevels, nPaddingClaims int) {
 	fmt.Printf(`voteSigR8y: "%s",`+"\n", voteSig.R8.Y.String())
 	fmt.Printf(`voteValue: "%s",`+"\n", vote.String())
 	fmt.Printf(`electionId: "%s",`+"\n", electionId.String())
-	fmt.Printf(`nullifier: "%s"`+"\n", nullifier.String())
+	fmt.Printf(`nullifier: "%s",`+"\n", nullifier.String())
+	fmt.Printf(`relayerPublicKey: "%s",`+"\n", relayerPublicKey.String())
+	fmt.Printf(`relayerProof: "%s",`+"\n", relayerProof.String())
 	fmt.Println("--- end of copy & paste to census.test.js ---")
 
 }

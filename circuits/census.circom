@@ -6,35 +6,41 @@ Circuit to check:
 - the public key of the private key is inside a ClaimCensus, which is inside the Merkletree with the CensusRoot
 - H(privateKey, electionID) == nullifier
 
-                       +-------------+
-                       |             |
-PRI_voteSig+---------->+  EDDSA      |
-                       |  Signature  +<----------+
-PUB_voteValue+-------->+  Verifier   |           |
-                       |             |           |       +---------+
-                       +-------------+           |       |         |
-                                                 +-------+ pvk2pbk +<------+--+PRI_privateKey
-                                                 |       |         |       |
-                         +-------------+         |       +---------+       |
-                         |             |         |                         |
-                         | ClaimCensus +<--------+                         |
-                         |             |              +----------+         |
-                         +------+------+              |          +<--------+
-                                |                     | Poseidon |
-                                |                     |          +<-----------+PUB_electionID
-                                |                     +-----+----+
-                                v                           |
-                          +-----+----+                      |
-                          |          |                      v
-                          |          |                    +-+--+
-   PUB_censusRoot+------->+ SMT      |                    | == +<-------------+PUB_nullifier
-                          | Verifier |                    +----+
-   PRI_siblings+--------->+          |
-                          |          |
-                          +----------+
 
-	// TODO PRI_revealKey
-	// TODO PUB_commitKey
+                               +-------------+
+                               |             |
+        PRI_voteSig+---------->+  EDDSA      |
+                               |  Signature  +<----------+
+        PUB_voteValue+-------->+  Verifier   |           |
+                               |             |           |       +---------+
+                               +-------------+           |       |         |
+                                                         +-------+ pvk2pbk +<------+--+PRI_privateKey
+                                                         |       |         |       |
+                                 +-------------+         |       +---------+       |
+                                 |             |         |                         |
+                                 | ClaimCensus +<--------+                         |
+                                 |             |              +----------+         |
+                                 +------+------+              |          +<--------+
+                                        |                     | Poseidon |
+                                        |                     |          +<-----------+PUB_electionID
+                                        |                     +-----+----+
+                                        v                           |
+                                  +-----+----+                      |
+                                  |          |                      v
+                                  |          |                    +-+--+
+           PUB_censusRoot+------->+ SMT      |                    | == +<-------------+PUB_nullifier
+                                  | Verifier |                    +----+               +
+           PRI_siblings+--------->+          |                                         |
+                                  |          |                         +----------+    |
+                                  +----------+                         |          +<---+
+                                                                  +----+ Poseidon |
+                                                                  |    |          +<--+PRI_relayerPublicKey
+         /                        +----------+      +----+        |    +----------+
+         | PRI_revealKey+-------->+ Poseidon +----->+ == |        v
+N miners |                        +----------+      +-+--+     +--+-+
+         |                                            ^        | == +<----------------+PUB_relayerProof
+         | PUB_commitKey+-----------------------------+        +----+
+         \
 
 */
 
@@ -64,7 +70,11 @@ template Census(nLevels) { // nAuth
 	signal input electionId;
 	signal input nullifier;
 
+	signal private input relayerPublicKey;
+	signal input relayerProof;
+
 	// TODO revealKey & commitKey
+
 
 
 	// compute Public Key
@@ -108,5 +118,13 @@ template Census(nLevels) { // nAuth
 	checkNullifier.in[1] <== nullifier;
 	checkNullifier.out === 1;
 
+	// check relayerProof
+	component computedRelayerProof = Poseidon(2, 6, 8, 57);
+	computedRelayerProof.inputs[0] <== nullifier;
+	computedRelayerProof.inputs[1] <== relayerPublicKey;
+	component checkRelayerProof = IsEqual();
+	checkRelayerProof.in[0] <== computedRelayerProof.out;
+	checkRelayerProof.in[1] <== relayerProof;
+	checkRelayerProof.out === 1;
 
 }
