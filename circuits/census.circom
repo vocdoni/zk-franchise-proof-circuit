@@ -63,8 +63,7 @@ include "../node_modules/circomlib/circuits/smt/smtverifier.circom";
 include "../node_modules/circomlib/circuits/smt/smtprocessor.circom";
 include "../node_modules/circomlib/circuits/eddsaposeidon.circom";
 
-/* include "../node_modules/iden3/circuits/circuits/buildClaimKeyBBJJ.circom"; // TODO import from iden3/circuits npm package */
-include "buildClaimKeyBBJJ.circom"; // tmp
+include "../node_modules/@iden3/circuits/circuits/buildClaimKeyBBJJ.circom";
 
 template Census(nLevels, nMiners) {
 	signal input censusRoot;
