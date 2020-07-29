@@ -3,7 +3,7 @@
 
 Circuit to check:
 - the prover is the owner of the private key
-- the public key of the private key is inside a ClaimCensus, which is inside the Merkletree with the CensusRoot
+- the public key of the private key is inside a Hash, which is inside the Merkletree with the CensusRoot (key=Poseidon(pk.X, pk.Y), value=0)
 - H(privateKey, electionID) == nullifier
 - H(nullifier, relayerPublicKey) == relayerProof
 - n times (for each Miner) * H(revealKey) == commitKey OR the rest of the circuit
@@ -20,7 +20,7 @@ PUB_voteValue+-------->+  Verifier   |           |
                                                  |       |         |       |
                          +-------------+         |       +---------+       |
                          |             |         |                         |
-                         | ClaimCensus +<--------+                         |
+                         |  Poseidon   +<--------+                         |
                          |             |              +----------+         |
                          +------+------+              |          +<--------+
                                 |                     | Poseidon |
@@ -62,8 +62,6 @@ include "../node_modules/circomlib/circuits/bitify.circom";
 include "../node_modules/circomlib/circuits/smt/smtverifier.circom";
 include "../node_modules/circomlib/circuits/smt/smtprocessor.circom";
 include "../node_modules/circomlib/circuits/eddsaposeidon.circom";
-
-include "../node_modules/@iden3/circuits/circuits/buildClaimKeyBBJJ.circom";
 
 template Census(nLevels, nMiners) {
 	signal input censusRoot;
@@ -115,10 +113,10 @@ template Census(nLevels, nMiners) {
 	sigVerification.R8y <== voteSigR8y;
 	sigVerification.M <== voteValue;
 
-	// build ClaimCensus
-	component claimCensus = BuildClaimKeyBBJJ(0);
-	claimCensus.ax <== babyPbk.Ax;
-	claimCensus.ay <== babyPbk.Ay;
+	// compute keyHash, which will be at the leaf
+	component keyHash = Poseidon(2, 6, 8, 57);
+	keyHash.inputs[0] <== babyPbk.Ax;
+	keyHash.inputs[1] <== babyPbk.Ay;
 	
 	component smtClaimExists = SMTVerifier(nLevels);
 	smtClaimExists.enabled <== verify;
@@ -130,8 +128,8 @@ template Census(nLevels, nMiners) {
 	smtClaimExists.oldKey <== 0;
 	smtClaimExists.oldValue <== 0;
 	smtClaimExists.isOld0 <== 0;
-	smtClaimExists.key <== claimCensus.hi;
-	smtClaimExists.value <== claimCensus.hv;
+	smtClaimExists.key <== keyHash.out;
+	smtClaimExists.value <== 0;
 
 	// check nullifier
 	component computedNullifier = Poseidon(2, 6, 8, 57);
