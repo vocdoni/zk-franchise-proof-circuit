@@ -6,13 +6,11 @@
   "scripts": {
     "clean": "rm -fR dist",
     "build": "npm run clean && ./node_modules/.bin/tsc --strictNullChecks",
-    "test": "./node_modules/.bin/mocha -r ts-node/register test/**/*.ts",
-    "postinstall": "cd node_modules/@iden3/circuits && npm install"
+    "test": "./node_modules/.bin/mocha -r ts-node/register test/**/*.ts"
   },
   "license": "GPL-3.0",
   "dependencies": {
-    "circomlib": "0.2.2",
-    "@iden3/circuits": "0.0.1"
+    "circomlib": "0.2.2"
   },
   "devDependencies": {
     "circom": "0.5.10",
