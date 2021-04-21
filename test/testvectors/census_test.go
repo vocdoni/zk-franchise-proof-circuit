@@ -36,7 +36,7 @@ func testCensus(t *testing.T, nLevels, nMiners, nPaddingLeafs int) {
 	censusTree, err := merkletree.NewMerkleTree(memory.NewMemoryStorage(), nLevels)
 	assert.Nil(t, err)
 
-	keyHash, err := poseidon.Hash([poseidon.T]*big.Int{
+	keyHash, err := poseidon.Hash([]*big.Int{
 		k.Public().X,
 		k.Public().Y,
 		big.NewInt(0),
@@ -56,7 +56,7 @@ func testCensus(t *testing.T, nLevels, nMiners, nPaddingLeafs int) {
 	}
 
 	// get merkleproof
-	proof, err := censusTree.GenerateProof(keyHash, nil)
+	proof, _, err := censusTree.GenerateProof(keyHash, nil)
 	assert.Nil(t, err)
 	siblings := merkletree.SiblingsFromProof(proof)
 	// for i := len(siblings); i < censusTree.MaxLevels(); i++ {
@@ -81,7 +81,7 @@ func testCensus(t *testing.T, nLevels, nMiners, nPaddingLeafs int) {
 
 	// compute nullifier
 	electionId := big.NewInt(10)
-	nullifier, err := poseidon.Hash([poseidon.T]*big.Int{
+	nullifier, err := poseidon.Hash([]*big.Int{
 		babyjub.SkToBigInt(&k),
 		electionId,
 		big.NewInt(0),
@@ -92,7 +92,7 @@ func testCensus(t *testing.T, nLevels, nMiners, nPaddingLeafs int) {
 
 	// relayerPublicKey & relayerProof
 	relayerPublicKey := big.NewInt(100)
-	relayerProof, err := poseidon.Hash([poseidon.T]*big.Int{
+	relayerProof, err := poseidon.Hash([]*big.Int{
 		nullifier,
 		relayerPublicKey,
 		big.NewInt(0),
@@ -106,7 +106,7 @@ func testCensus(t *testing.T, nLevels, nMiners, nPaddingLeafs int) {
 	var commitKey []*big.Int
 	for i := 0; i < nMiners; i++ {
 		rk := big.NewInt(int64(i))
-		ck, err := poseidon.Hash([poseidon.T]*big.Int{
+		ck, err := poseidon.Hash([]*big.Int{
 			rk,
 			big.NewInt(0),
 			big.NewInt(0),
