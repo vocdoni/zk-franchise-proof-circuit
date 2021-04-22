@@ -1,0 +1,5 @@
+- use nvm 16
+- must add matter labs bellman beta: remove default features from Config.toml and Instant code in 
+  - 	modificat:        src/kate_commitment/mod.rs
+	modificat:        src/plonk/mod.rs
+ 
