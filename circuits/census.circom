@@ -86,18 +86,20 @@ template Census(nLevels, nMiners) {
 	component computedCommitKey[nMiners];
 	component checkCommitKey[nMiners];
 	component multiAnd = MultiAND(nMiners);
+	
 	for (var i=0; i<nMiners; i++) {
-		computedCommitKey[i] = Poseidon(1, 6, 8, 57);
+		computedCommitKey[i] = Poseidon(1);
 		computedCommitKey[i].inputs[0] <== revealKey[i];
+		
 		checkCommitKey[i] = IsEqual();
 		checkCommitKey[i].in[0] <== computedCommitKey[i].out;
 		checkCommitKey[i].in[1] <== commitKey[i];
 
 		multiAnd.in[i] <== checkCommitKey[i].out;
 	}
+	
 	signal verify;
 	verify <== 1 - multiAnd.out;
-
 
 	// compute Public Key
 	component babyPbk = BabyPbk();
@@ -114,10 +116,10 @@ template Census(nLevels, nMiners) {
 	sigVerification.M <== voteValue;
 
 	// compute keyHash, which will be at the leaf
-	component keyHash = Poseidon(2, 6, 8, 57);
+	component keyHash = Poseidon(2);
 	keyHash.inputs[0] <== babyPbk.Ax;
 	keyHash.inputs[1] <== babyPbk.Ay;
-	
+
 	component smtClaimExists = SMTVerifier(nLevels);
 	smtClaimExists.enabled <== verify;
 	smtClaimExists.fnc <== 0; // 0 as is to verify inclusion
@@ -132,7 +134,7 @@ template Census(nLevels, nMiners) {
 	smtClaimExists.value <== 0;
 
 	// check nullifier
-	component computedNullifier = Poseidon(2, 6, 8, 57);
+	component computedNullifier = Poseidon(2);
 	computedNullifier.inputs[0] <== privateKey;
 	computedNullifier.inputs[1] <== electionId;
 	component checkNullifier = ForceEqualIfEnabled();
@@ -141,12 +143,12 @@ template Census(nLevels, nMiners) {
 	checkNullifier.in[1] <== nullifier;
 
 	// check relayerProof
-	component computedRelayerProof = Poseidon(2, 6, 8, 57);
+	component computedRelayerProof = Poseidon(2);
 	computedRelayerProof.inputs[0] <== nullifier;
 	computedRelayerProof.inputs[1] <== relayerPublicKey;
 	component checkRelayerProof = ForceEqualIfEnabled();
 	checkRelayerProof.enabled <== verify;
 	checkRelayerProof.in[0] <== computedRelayerProof.out;
 	checkRelayerProof.in[1] <== relayerProof;
-
 }
+
