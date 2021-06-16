@@ -1,11 +1,9 @@
 const path = require("path");
 const tester = require("circom").tester;
-const chai = require("chai");
-const assert = chai.assert;
+// const chai = require("chai");
+// const assert = chai.assert;
 
 const { Election, Voter } = require("../src/franchise");
-
-export {};
 
 describe("lib test", function () {
     this.timeout(200000);
