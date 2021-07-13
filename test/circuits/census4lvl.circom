@@ -1,3 +1,3 @@
 include "../../circuits/census.circom";
 
-component main = Census(4, 1);
+component main = Census(4);
