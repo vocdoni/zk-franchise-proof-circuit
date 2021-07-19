@@ -1,6 +1,8 @@
 const path = require("path");
 const tester = require("circom").tester;
 
+export {};
+
 const { Election, Voter } = require("../src/franchise");
 
 describe("lib test", function () {

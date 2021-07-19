@@ -1,8 +1,8 @@
 const path = require("path");
 const fs = require("fs");
 const tester = require("circom").tester;
-// const chai = require("chai");
-// const assert = chai.assert;
+
+export {};
 
 describe("Check inputs generated from go test vectors", function () {
     this.timeout(200000);
