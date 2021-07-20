@@ -7,15 +7,18 @@ class Election {
       this.electionId = electionId;
       this.levels = levels;
       this.tree = null;
+      this.index = 0;
    }
    async addCensus(secretKeyHash) {
       if (this.tree === null) {
          this.tree = await smt.newMemEmptyTrie();
       }
-      await this.tree.insert(secretKeyHash, 0);
+      await this.tree.insert(this.index, secretKeyHash);
+      this.index++;
+      return this.index-1;
    }
-   async voterData(secretKeyHash) {
-      const res = await this.tree.find(secretKeyHash);
+   async voterData(index) {
+      const res = await this.tree.find(index);
       assert(res.found);
       let siblings = res.siblings;
       while (siblings.length < this.levels) siblings.push(BigInt(0));
@@ -31,9 +34,10 @@ class Election {
 class Voter {
    constructor(secretKey) {
       this.key = { secretKey }
+      this.index = 0;
    }
 
-   getSecretKeyHash() {
+   getZkCensusKey() {
       return poseidon([this.key.secretKey]);
    }
 
@@ -43,6 +47,7 @@ class Voter {
       return {
          censusRoot: voterData.root,
          censusSiblings: voterData.siblings,
+         index: this.index,
          secretKey : BigInt(this.key.secretKey),
 
          voteValue,

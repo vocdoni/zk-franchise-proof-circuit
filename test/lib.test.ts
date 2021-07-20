@@ -11,10 +11,10 @@ describe("lib test", function () {
     it("Test Census 3lvl", async () => {
         const voter = new Voter("3876493977147089964395646989418653640709890493868463039177063670701706079087");
 
-        const election = new Election(/* electionid */ 1, /* levels */ 4);
-        await election.addCensus(voter.getSecretKeyHash());
+        const election = new Election( 1, 4);
+        voter.index = await election.addCensus(voter.getZkCensusKey());
 
-        const voterData = await election.voterData(voter.getSecretKeyHash());
+        const voterData = await election.voterData(voter.index);
         const voteValue = BigInt(2);
         let input = voter.vote(voterData, voteValue);
 
@@ -25,15 +25,15 @@ describe("lib test", function () {
 
         const witness = await circuit.calculateWitness(input);
         await circuit.checkConstraints(witness);
-    }),
+    });
 
     it("Test Census 9lvl", async () => {
         const voter = new Voter("3876493977147089964395646989418653640709890493868463039177063670701706079087");
 
-        const election = new Election(/* electionid */ 1, /* levels */ 10);
-        await election.addCensus(voter.getSecretKeyHash());
+        const election = new Election(1, 10);
+        voter.index = await election.addCensus(voter.getZkCensusKey());
 
-        const voterData = await election.voterData(voter.getSecretKeyHash());
+        const voterData = await election.voterData(voter.index);
         const voteValue = BigInt(2);
         let input = voter.vote(voterData, voteValue);
 
@@ -50,10 +50,10 @@ describe("lib test", function () {
     it("Test Census 19lvl", async () => {
         const voter = new Voter("3876493977147089964395646989418653640709890493868463039177063670701706079087");
 
-        const election = new Election(/* electionid */ 1, /* levels */ 20);
-        await election.addCensus(voter.getSecretKeyHash());
+        const election = new Election(1, 20);
+        voter.index = await election.addCensus(voter.getZkCensusKey());
 
-        const voterData = await election.voterData(voter.getSecretKeyHash());
+        const voterData = await election.voterData(voter.index);
         const voteValue = BigInt(2);
         let input = voter.vote(voterData, voteValue);
 

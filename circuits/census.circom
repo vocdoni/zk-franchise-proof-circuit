@@ -3,25 +3,30 @@
 
 Circuit to check:
 - the prover is the owner of the secret key
-- the prover belongs to the census
-	- the secret key is inside a Hash, which is inside the Merkletree with the CensusRoot (key=Poseidon([secretKey]), value=0)
+- zkCensusKey (hash of the user's secret key) belongs to the census
+	- the secret key is inside a Hash, which is inside the Merkletree with
+	  the CensusRoot (key=index), value=zkCensusKey)
 - H(secretKey, electionID) == nullifier
 	- to avoid proof reusability
 
 
-                       +----------+         +----------+
-                       |          |         |          |
-                       |          +<--------+ Poseidon +<-----+--+PRI_secretKey
-PUB_censusRoot+------->+ SMT      |         |          |      |
-                       | Verifier |         +----------+      |
-PRI_siblings+--------->+          |                           |
-                       |          |                           |
-                       +----------+                           |
-                                         +----------+         |
-                          +----+         |          +<--------+
-    PUB_nullifier+------->+ == +<--------+ Poseidon |
-                          +----+         |          +<-----------+PUB_electionID
-                                         +----------+
+                       +----------+
+                       |          |
+PUB_censusRoot+------->+          |(key)<-----+PRI_index
+                       |          |
+                       | SMT      |            +----------+
+                       | Verifier |            |          |
+PRI_siblings+--------->+          |(value)<----+ Poseidon +<-----+--+PRI_secretKey
+                       |          |            |          |      |
+                       +----------+            +----------+      |
+                                                                 |
+                                     +----------+                |
+                      +----+         |          +<---------------+
+PUB_nullifier+------->+ == +<--------+ Poseidon |
+                      +----+         |          +<-----------+PUB_electionID
+                                     +----------+
+PUB_voteValue
+
 
 
 */
@@ -29,11 +34,11 @@ PRI_siblings+--------->+          |                           |
 include "../node_modules/circomlib/circuits/comparators.circom";
 include "../node_modules/circomlib/circuits/poseidon.circom";
 include "../node_modules/circomlib/circuits/smt/smtverifier.circom";
-include "../node_modules/circomlib/circuits/eddsaposeidon.circom";
 
 template Census(nLevels) {
 	signal input censusRoot;
 	signal private input censusSiblings[nLevels];
+	signal private input index;
 	signal private input secretKey;
 
 	signal input voteValue;
@@ -41,9 +46,9 @@ template Census(nLevels) {
 	signal input electionId;
 	signal input nullifier;
 
-	// compute secretKeyHash, which will be at the leaf
-	component secretKeyHash = Poseidon(1);
-	secretKeyHash.inputs[0] <== secretKey;
+	// compute zkCensusKey, which will be at the leaf
+	component zkCensusKey = Poseidon(1);
+	zkCensusKey.inputs[0] <== secretKey;
 
 	component smtClaimExists = SMTVerifier(nLevels);
 	smtClaimExists.enabled <== 1;
@@ -55,8 +60,8 @@ template Census(nLevels) {
 	smtClaimExists.oldKey <== 0;
 	smtClaimExists.oldValue <== 0;
 	smtClaimExists.isOld0 <== 0;
-	smtClaimExists.key <== secretKeyHash.out;
-	smtClaimExists.value <== 0;
+	smtClaimExists.key <== index;
+	smtClaimExists.value <== zkCensusKey.out;
 
 	// check nullifier
 	component computedNullifier = Poseidon(2);
