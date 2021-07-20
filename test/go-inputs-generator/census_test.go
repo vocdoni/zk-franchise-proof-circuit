@@ -35,27 +35,34 @@ func testCensus(t *testing.T, inputsFileName string, nLevels, nPaddingLeafs int)
 	// new CensusTree
 	censusTree, err := arbotree.NewTree("test0", t.TempDir(), nLevels, arbo.HashFunctionPoseidon)
 	assert.Nil(t, err)
+	index := big.NewInt(0)
 
 	secretKeyHashBI, err := poseidon.Hash([]*big.Int{
 		secretKey,
 	})
 	bLen := arbo.HashFunctionPoseidon.Len()
+	indexBytes := arbo.BigIntToBytes(bLen, index)
 	secretKeyHashBytes := arbo.BigIntToBytes(bLen, secretKeyHashBI)
 
 	// add keyHash to CensusMerkleTree
-	err = censusTree.Add(secretKeyHashBytes, []byte{0})
+	err = censusTree.Add(indexBytes, secretKeyHashBytes)
 	assert.Nil(t, err)
+	userIndex := index
+	index = new(big.Int).Add(index, big.NewInt(1))
 
 	// add extra claims to fill the MerkleTree
 	for i := 0; i < nPaddingLeafs; i++ {
+		indexBytes := arbo.BigIntToBytes(bLen, index)
 		err = censusTree.Add(
-			arbo.BigIntToBytes(bLen, big.NewInt(int64(i))),
+			indexBytes,
 			arbo.BigIntToBytes(bLen, big.NewInt(int64(i))))
 		assert.Nil(t, err)
+		index = new(big.Int).Add(index, big.NewInt(1))
 	}
 
 	// get merkleproof
-	proof, err := censusTree.GenProof(secretKeyHashBytes, []byte{0})
+	userIndexBytes := arbo.BigIntToBytes(bLen, userIndex)
+	proof, err := censusTree.GenProof(userIndexBytes, secretKeyHashBytes)
 	assert.Nil(t, err)
 	siblings, err := arbo.UnpackSiblings(arbo.HashFunctionPoseidon, proof)
 	assert.Nil(t, err)
@@ -88,6 +95,7 @@ func testCensus(t *testing.T, inputsFileName string, nLevels, nPaddingLeafs int)
 	fmt.Fprintf(w, "{\n")
 	fmt.Fprintf(w, `	"censusRoot": "%s",`+"\n", arbo.BytesToBigInt(rootBytes[:]))
 	fmt.Fprintf(w, `	"censusSiblings": %s,`+"\n", jsonSiblings) // TMP
+	fmt.Fprintf(w, `	"index": "%s",`+"\n", userIndex.String())
 	fmt.Fprintf(w, `	"secretKey": "%s",`+"\n", secretKey.String())
 	fmt.Fprintf(w, `	"voteValue": "%s",`+"\n", vote.String())
 	fmt.Fprintf(w, `	"electionId": "%s",`+"\n", electionId.String())
