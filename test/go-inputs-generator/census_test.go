@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -83,6 +84,10 @@ func testCensus(t *testing.T, inputsFileName string, nLevels, nPaddingLeafs int)
 	// --- User side
 	// -------------
 	vote := big.NewInt(1)
+	voteValueHash := sha256.Sum256(vote.Bytes())
+	voteValue0 := new(big.Int).SetBytes(arbo.SwapEndianness(voteValueHash[:16])) // little-endian
+	voteValue1 := new(big.Int).SetBytes(arbo.SwapEndianness(voteValueHash[16:]))
+	voteValue := fmt.Sprintf("[\"%s\", \"%s\"]", voteValue0.String(), voteValue1.String())
 
 	// compute nullifier
 	electionId := big.NewInt(10)
@@ -97,7 +102,7 @@ func testCensus(t *testing.T, inputsFileName string, nLevels, nPaddingLeafs int)
 	fmt.Fprintf(w, `	"censusSiblings": %s,`+"\n", jsonSiblings) // TMP
 	fmt.Fprintf(w, `	"index": "%s",`+"\n", userIndex.String())
 	fmt.Fprintf(w, `	"secretKey": "%s",`+"\n", secretKey.String())
-	fmt.Fprintf(w, `	"voteValue": "%s",`+"\n", vote.String())
+	fmt.Fprintf(w, `	"voteValue": %s,`+"\n", voteValue)
 	fmt.Fprintf(w, `	"electionId": "%s",`+"\n", electionId.String())
 	fmt.Fprintf(w, `	"nullifier": "%s"`+"\n", nullifier.String())
 	fmt.Fprintln(w, "}")

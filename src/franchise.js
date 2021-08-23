@@ -1,6 +1,7 @@
 const bigInt = require("snarkjs").bigInt;
 const { assert } = require("chai");
 const { smt, poseidon } = require("circomlib");
+const crypto = require("crypto");
 
 class Election {
    constructor(electionId, levels) {
@@ -58,7 +59,19 @@ class Voter {
    }
 }
 
+function computeVoteValue(voteBuffer) {
+   const voteValueHash = crypto.createHash("sha256")
+      .update(voteBuffer)
+      .digest("hex");
+   const voteValue = [
+      BigInt("0x" + voteValueHash.slice(0, 32).match(/.{2}/g).reverse().join("")), // little-endian BigInt representation
+      BigInt("0x" + voteValueHash.slice(32, 64).match(/.{2}/g).reverse().join("")) // little-endian BigInt representation
+   ];
+   return voteValue;
+}
+
 module.exports = {
    Election,
-   Voter
+   Voter,
+   computeVoteValue
 }

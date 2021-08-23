@@ -41,7 +41,10 @@ template Census(nLevels) {
 	signal private input index;
 	signal private input secretKey;
 
-	signal input voteValue;
+	// voteValue is not operated inside the circuit, assuming that in
+	// Circom an input that is not used will be included in the constraints
+	// system and in the witness
+	signal input voteValue[2];
 
 	signal input electionId;
 	signal input nullifier;
