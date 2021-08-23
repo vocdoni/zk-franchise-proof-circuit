@@ -3,7 +3,7 @@ const tester = require("circom").tester;
 
 export {};
 
-const { Election, Voter } = require("../src/franchise");
+const { Election, Voter, computeVoteValue } = require("../src/franchise");
 
 describe("lib test", function () {
     this.timeout(200000);
@@ -15,7 +15,9 @@ describe("lib test", function () {
         voter.index = await election.addCensus(voter.getZkCensusKey());
 
         const voterData = await election.voterData(voter.index);
-        const voteValue = BigInt(2);
+
+        const votePreHash = Buffer.from("test", "utf-8"); // this would be the bytes of the user vote values array, or the encrypted votes
+        const voteValue = computeVoteValue(votePreHash);
         let input = voter.vote(voterData, voteValue);
 
         const circuit = await tester(
@@ -34,7 +36,9 @@ describe("lib test", function () {
         voter.index = await election.addCensus(voter.getZkCensusKey());
 
         const voterData = await election.voterData(voter.index);
-        const voteValue = BigInt(2);
+
+        const votePreHash = Buffer.from("test", "utf-8"); // this would be the bytes of the user vote values array, or the encrypted votes
+        const voteValue = computeVoteValue(votePreHash);
         let input = voter.vote(voterData, voteValue);
 
         const circuit = await tester(
@@ -54,7 +58,9 @@ describe("lib test", function () {
         voter.index = await election.addCensus(voter.getZkCensusKey());
 
         const voterData = await election.voterData(voter.index);
-        const voteValue = BigInt(2);
+
+        const votePreHash = Buffer.from("test", "utf-8"); // this would be the bytes of the user vote values array, or the encrypted votes
+        const voteValue = computeVoteValue(votePreHash);
         let input = voter.vote(voterData, voteValue);
 
         const circuit = await tester(
