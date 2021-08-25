@@ -1,2 +1,7 @@
 node_modules
 inputs*.json
+web/build
+web/release
+*.r1cs
+*.sym
+*.wasm
