@@ -42,7 +42,7 @@ class Voter {
       return poseidon([this.key.secretKey]);
    }
 
-   vote(voterData, voteValue) {
+   vote(voterData, voteHash) {
       const nullifier = poseidon([this.key.secretKey, voterData.electionId]);
 
       return {
@@ -51,7 +51,7 @@ class Voter {
          index: this.index,
          secretKey : BigInt(this.key.secretKey),
 
-         voteValue,
+         voteHash,
 
          electionId: BigInt(voterData.electionId),
          nullifier,
@@ -59,19 +59,19 @@ class Voter {
    }
 }
 
-function computeVoteValue(voteBuffer) {
-   const voteValueHash = crypto.createHash("sha256")
+function computeVoteHash(voteBuffer) {
+   const voteHashHash = crypto.createHash("sha256")
       .update(voteBuffer)
       .digest("hex");
-   const voteValue = [
-      BigInt("0x" + voteValueHash.slice(0, 32).match(/.{2}/g).reverse().join("")), // little-endian BigInt representation
-      BigInt("0x" + voteValueHash.slice(32, 64).match(/.{2}/g).reverse().join("")) // little-endian BigInt representation
+   const voteHash = [
+      BigInt("0x" + voteHashHash.slice(0, 32).match(/.{2}/g).reverse().join("")), // little-endian BigInt representation
+      BigInt("0x" + voteHashHash.slice(32, 64).match(/.{2}/g).reverse().join("")) // little-endian BigInt representation
    ];
-   return voteValue;
+   return voteHash;
 }
 
 module.exports = {
    Election,
    Voter,
-   computeVoteValue
+   computeVoteHash
 }

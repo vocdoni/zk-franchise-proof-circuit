@@ -25,7 +25,7 @@ PRI_siblings+--------->+          |(value)<----+ Poseidon +<-----+--+PRI_secretK
 PUB_nullifier+------->+ == +<--------+ Poseidon |
                       +----+         |          +<-----------+PUB_electionID
                                      +----------+
-PUB_voteValue
+PUB_voteHash
 
 
 
@@ -36,18 +36,21 @@ include "../node_modules/circomlib/circuits/poseidon.circom";
 include "../node_modules/circomlib/circuits/smt/smtverifier.circom";
 
 template Census(nLevels) {
+	// defined by the process
+	signal input electionId;
 	signal input censusRoot;
+
+	// defined by the user
+	signal input nullifier;
+	// voteHash is not operated inside the circuit, assuming that in
+	// Circom an input that is not used will be included in the constraints
+	// system and in the witness
+	signal input voteHash[2];
+
 	signal private input censusSiblings[nLevels];
 	signal private input index;
 	signal private input secretKey;
 
-	// voteValue is not operated inside the circuit, assuming that in
-	// Circom an input that is not used will be included in the constraints
-	// system and in the witness
-	signal input voteValue[2];
-
-	signal input electionId;
-	signal input nullifier;
 
 	// compute zkCensusKey, which will be at the leaf
 	component zkCensusKey = Poseidon(1);

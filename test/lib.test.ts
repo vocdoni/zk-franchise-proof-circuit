@@ -3,7 +3,7 @@ const tester = require("circom").tester;
 
 export {};
 
-const { Election, Voter, computeVoteValue } = require("../src/franchise");
+const { Election, Voter, computeVoteHash } = require("../src/franchise");
 
 describe("lib test", function () {
     this.timeout(200000);
@@ -17,8 +17,8 @@ describe("lib test", function () {
         const voterData = await election.voterData(voter.index);
 
         const votePreHash = Buffer.from("test", "utf-8"); // this would be the bytes of the user vote values array, or the encrypted votes
-        const voteValue = computeVoteValue(votePreHash);
-        let input = voter.vote(voterData, voteValue);
+        const voteHash = computeVoteHash(votePreHash);
+        let input = voter.vote(voterData, voteHash);
 
         const circuit = await tester(
             path.join(__dirname, "circuits", "census4lvl.circom"),
@@ -38,8 +38,8 @@ describe("lib test", function () {
         const voterData = await election.voterData(voter.index);
 
         const votePreHash = Buffer.from("test", "utf-8"); // this would be the bytes of the user vote values array, or the encrypted votes
-        const voteValue = computeVoteValue(votePreHash);
-        let input = voter.vote(voterData, voteValue);
+        const voteHash = computeVoteHash(votePreHash);
+        let input = voter.vote(voterData, voteHash);
 
         const circuit = await tester(
             path.join(__dirname, "circuits", "census10lvl.circom"),
@@ -60,8 +60,8 @@ describe("lib test", function () {
         const voterData = await election.voterData(voter.index);
 
         const votePreHash = Buffer.from("test", "utf-8"); // this would be the bytes of the user vote values array, or the encrypted votes
-        const voteValue = computeVoteValue(votePreHash);
-        let input = voter.vote(voterData, voteValue);
+        const voteHash = computeVoteHash(votePreHash);
+        let input = voter.vote(voterData, voteHash);
 
         const circuit = await tester(
             path.join(__dirname, "circuits", "census20lvl.circom"),
