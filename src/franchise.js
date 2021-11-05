@@ -3,9 +3,9 @@ const { assert } = require("chai");
 const { smt, poseidon } = require("circomlib");
 const crypto = require("crypto");
 
-class Election {
-   constructor(electionId, levels) {
-      this.electionId = electionId;
+class Process {
+   constructor(processId, levels) {
+      this.processId = getProcessId(processId);
       this.levels = levels;
       this.tree = null;
       this.index = 0;
@@ -25,7 +25,7 @@ class Election {
       while (siblings.length < this.levels) siblings.push(BigInt(0));
 
       return {
-         electionId : this.electionId,
+         processId : this.processId,
          root: this.tree.root,
          siblings: siblings,
       };
@@ -43,7 +43,7 @@ class Voter {
    }
 
    vote(voterData, voteHash) {
-      const nullifier = poseidon([this.key.secretKey, voterData.electionId]);
+      const nullifier = poseidon([this.key.secretKey, voterData.processId[0], voterData.processId[1]]);
 
       return {
          censusRoot: voterData.root,
@@ -53,7 +53,7 @@ class Voter {
 
          voteHash,
 
-         electionId: BigInt(voterData.electionId),
+         processId: voterData.processId,
          nullifier,
       }
    }
@@ -69,9 +69,21 @@ function computeVoteHash(voteBuffer) {
    ];
    return voteHash;
 }
+function getProcessId(pIdInt) {
+   const pIdBuffer = Buffer.from(pIdInt.toString(), "utf-8");
+
+   const pIdHash = crypto.createHash("sha256")
+      .update(pIdBuffer)
+      .digest("hex");
+   const pId = [
+      BigInt("0x" + pIdHash.slice(0, 32).match(/.{2}/g).reverse().join("")), // little-endian BigInt representation
+      BigInt("0x" + pIdHash.slice(32, 64).match(/.{2}/g).reverse().join("")) // little-endian BigInt representation
+   ];
+   return pId;
+}
 
 module.exports = {
-   Election,
+   Process,
    Voter,
    computeVoteHash
 }

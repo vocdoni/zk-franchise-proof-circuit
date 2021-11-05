@@ -6,7 +6,7 @@ Circuit to check:
 - zkCensusKey (hash of the user's secret key) belongs to the census
 	- the secret key is inside a Hash, which is inside the Merkletree with
 	  the CensusRoot (key=index), value=zkCensusKey)
-- H(secretKey, electionID) == nullifier
+- H(secretKey, processID) == nullifier
 	- to avoid proof reusability
 
 
@@ -22,8 +22,8 @@ PRI_siblings+--------->+          |(value)<----+ Poseidon +<-----+--+PRI_secretK
                                                                  |
                                      +----------+                |
                       +----+         |          +<---------------+
-PUB_nullifier+------->+ == +<--------+ Poseidon |
-                      +----+         |          +<-----------+PUB_electionID
+PUB_nullifier+------->+ == +<--------+ Poseidon |<-----------+PUB_processID_0
+                      +----+         |          +<-----------+PUB_processID_1
                                      +----------+
 PUB_voteHash
 
@@ -37,7 +37,7 @@ include "../node_modules/circomlib/circuits/smt/smtverifier.circom";
 
 template Census(nLevels) {
 	// defined by the process
-	signal input electionId;
+	signal input processId[2];
 	signal input censusRoot;
 
 	// defined by the user
@@ -70,9 +70,10 @@ template Census(nLevels) {
 	smtClaimExists.value <== zkCensusKey.out;
 
 	// check nullifier
-	component computedNullifier = Poseidon(2);
+	component computedNullifier = Poseidon(3);
 	computedNullifier.inputs[0] <== secretKey;
-	computedNullifier.inputs[1] <== electionId;
+	computedNullifier.inputs[1] <== processId[0];
+	computedNullifier.inputs[2] <== processId[1];
 	component checkNullifier = ForceEqualIfEnabled();
 	checkNullifier.enabled <== 1;
 	checkNullifier.in[0] <== computedNullifier.out;
