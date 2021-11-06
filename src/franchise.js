@@ -1,6 +1,6 @@
 const bigInt = require("snarkjs").bigInt;
 const { assert } = require("chai");
-const { smt, poseidon } = require("circomlib");
+const { newMemEmptyTrie, buildPoseidon } = require("circomlibjs");
 const crypto = require("crypto");
 
 class Process {
@@ -12,7 +12,7 @@ class Process {
    }
    async addCensus(secretKeyHash) {
       if (this.tree === null) {
-         this.tree = await smt.newMemEmptyTrie();
+         this.tree = await newMemEmptyTrie();
       }
       await this.tree.insert(this.index, secretKeyHash);
       this.index++;
@@ -38,24 +38,39 @@ class Voter {
       this.index = 0;
    }
 
-   getZkCensusKey() {
+   async getZkCensusKey() {
+      const poseidon = await buildPoseidon();
+      const F = poseidon.F;
       return poseidon([this.key.secretKey]);
    }
 
-   vote(voterData, voteHash) {
-      const nullifier = poseidon([this.key.secretKey, voterData.processId[0], voterData.processId[1]]);
+   async vote(voterData, voteHash) {
+      const poseidon = await buildPoseidon();
+      const F = poseidon.F;
+      const nullifierBytes = poseidon([this.key.secretKey, voterData.processId[0], voterData.processId[1]]);
+      const nullifier = F.toObject(nullifierBytes).toString();
 
-      return {
-         censusRoot: voterData.root,
-         censusSiblings: voterData.siblings,
-         index: this.index,
-         secretKey : BigInt(this.key.secretKey),
 
-         voteHash,
-
-         processId: voterData.processId,
-         nullifier,
+      const root = F.toObject(voterData.root).toString();
+      const siblingsStr = [];
+      for (let i=0;i<voterData.siblings.length;i++) {
+         siblingsStr.push(voterData.siblings[i].toString());
       }
+      return {
+         censusRoot: root.toString(),
+         censusSiblings: siblingsStr,
+         index: this.index.toString(),
+         secretKey : BigInt(this.key.secretKey).toString(),
+         voteHash: [
+            voteHash[0].toString(),
+            voteHash[1].toString(),
+         ],
+         processId: [
+            voterData.processId[0].toString(),
+            voterData.processId[1].toString(),
+         ],
+         nullifier,
+      };
    }
 }
 

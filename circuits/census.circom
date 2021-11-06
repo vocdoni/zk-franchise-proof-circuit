@@ -1,3 +1,5 @@
+pragma circom 2.0.0;
+
 /*
 # credential.circom
 
@@ -37,19 +39,20 @@ include "../node_modules/circomlib/circuits/smt/smtverifier.circom";
 
 template Census(nLevels) {
 	// defined by the process
-	signal input processId[2];
-	signal input censusRoot;
+	signal input processId[2]; // public
+	signal input censusRoot; // public
 
 	// defined by the user
-	signal input nullifier;
+	signal input nullifier; // public
 	// voteHash is not operated inside the circuit, assuming that in
 	// Circom an input that is not used will be included in the constraints
 	// system and in the witness
-	signal input voteHash[2];
+	signal input voteHash[2]; // public
 
-	signal private input censusSiblings[nLevels];
-	signal private input index;
-	signal private input secretKey;
+	// private signals
+	signal input censusSiblings[nLevels];
+	signal input index;
+	signal input secretKey;
 
 
 	// compute zkCensusKey, which will be at the leaf
