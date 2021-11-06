@@ -1,5 +1,5 @@
 SNARKJS=../node_modules/.bin/snarkjs 
-CIRCOM=../node_modules/.bin/circom 
+CIRCOM=circom 
 BUILD=build
 RELEASE=release
 
@@ -30,7 +30,12 @@ $(RELEASE)/circuit_final.zkey $(RELEASE)/verification_key.json: $(BUILD)/ $(BUIL
 	$(SNARKJS) zkey export verificationkey $(RELEASE)/circuit_final.zkey $(RELEASE)/verification_key.json
 
 $(RELEASE)/circuit.wasm $(BUILD)/circuit.r1cs: $(BUILD) $(RELEASE) circuit.circom
-	$(CIRCOM) circuit.circom --r1cs $(BUILD)/circuit.r1cs --wasm $(RELEASE)/circuit.wasm --sym $(BUILD)/circuit.sym -v
+	$(CIRCOM) circuit.circom --r1cs --wasm --sym
+	cp circuit.r1cs $(BUILD)/circuit.r1cs
+	cp circuit_js/circuit.wasm $(BUILD)/circuit.wasm
+	cp circuit_js/circuit.wasm $(RELEASE)/circuit.wasm
+	cp circuit.sym $(BUILD)/circuit.sym
+	../node_modules/browserify/bin/cmd.js circuit_js/witness_calculator.js --standalone WitnessCalc > release/witness_calculator_bundle.js
 
 $(BUILD)/pot_final.ptau: $(BUILD)
 	$(SNARKJS) powersoftau new bn128 15 $(BUILD)/pot_0000.ptau -v
