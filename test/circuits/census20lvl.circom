@@ -1,3 +1,5 @@
+pragma circom 2.0.0;
+
 include "../../circuits/census.circom";
 
-component main = Census(20);
+component main {public [processId, censusRoot, nullifier, voteHash]}= Census(20);

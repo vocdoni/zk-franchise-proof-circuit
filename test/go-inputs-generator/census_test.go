@@ -90,10 +90,16 @@ func testCensus(t *testing.T, inputsFileName string, nLevels, nPaddingLeafs int)
 	voteHash := fmt.Sprintf("[\"%s\", \"%s\"]", voteHash0.String(), voteHash1.String())
 
 	// compute nullifier
-	electionId := big.NewInt(10)
+	processIdBytes := sha256.Sum256(big.NewInt(10).Bytes())
+	processId := []*big.Int{
+		new(big.Int).SetBytes(arbo.SwapEndianness(processIdBytes[:16])),
+		new(big.Int).SetBytes(arbo.SwapEndianness(processIdBytes[16:])),
+	}
+	processIdStr := fmt.Sprintf("[\"%s\", \"%s\"]", processId[0].String(), processId[1].String())
 	nullifier, err := poseidon.Hash([]*big.Int{
 		secretKey,
-		electionId,
+		processId[0],
+		processId[1],
 	})
 
 	w := bytes.NewBufferString("")
@@ -103,7 +109,7 @@ func testCensus(t *testing.T, inputsFileName string, nLevels, nPaddingLeafs int)
 	fmt.Fprintf(w, `	"index": "%s",`+"\n", userIndex.String())
 	fmt.Fprintf(w, `	"secretKey": "%s",`+"\n", secretKey.String())
 	fmt.Fprintf(w, `	"voteHash": %s,`+"\n", voteHash)
-	fmt.Fprintf(w, `	"electionId": "%s",`+"\n", electionId.String())
+	fmt.Fprintf(w, `	"processId": %s,`+"\n", processIdStr)
 	fmt.Fprintf(w, `	"nullifier": "%s"`+"\n", nullifier.String())
 	fmt.Fprintln(w, "}")
 

@@ -17,6 +17,14 @@ jobs:
       uses: actions/setup-go@v1
       with:
         go-version: ${{ matrix.go-version }}
+    - name: Prepare circom
+      run: |
+        # once circom binary is published, instead of compiling from source
+        # every time, use the published binaries
+        git clone https://github.com/iden3/circom.git
+        cd circom
+        cargo build --release
+        cargo install --path circom
     - name: run tests
       run: |
         npm install
