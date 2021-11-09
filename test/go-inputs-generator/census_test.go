@@ -16,9 +16,9 @@ import (
 )
 
 func TestCensus(t *testing.T) {
-	testCensus(t, "inputs0.json", 3, 0)
-	testCensus(t, "inputs1.json", 9, 10)
-	testCensus(t, "inputs2.json", 19, 1000)
+	testCensus(t, "inputs0.json", 4, 0)
+	testCensus(t, "inputs1.json", 10, 10)
+	testCensus(t, "inputs2.json", 20, 1000)
 }
 
 func testCensus(t *testing.T, inputsFileName string, nLevels, nPaddingLeafs int) {
