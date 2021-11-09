@@ -6,7 +6,7 @@ const crypto = require("crypto");
 class Process {
    constructor(processId, levels) {
       this.processId = getProcessId(processId);
-      this.levels = levels;
+      this.levels = levels+1;
       this.tree = null;
       this.index = 0;
    }

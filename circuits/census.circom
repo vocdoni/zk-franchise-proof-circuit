@@ -38,6 +38,7 @@ include "../node_modules/circomlib/circuits/poseidon.circom";
 include "../node_modules/circomlib/circuits/smt/smtverifier.circom";
 
 template Census(nLevels) {
+	var realNLevels = nLevels+1;
 	// defined by the process
 	signal input processId[2]; // public
 	signal input censusRoot; // public
@@ -50,7 +51,7 @@ template Census(nLevels) {
 	signal input voteHash[2]; // public
 
 	// private signals
-	signal input censusSiblings[nLevels];
+	signal input censusSiblings[realNLevels];
 	signal input index;
 	signal input secretKey;
 
@@ -59,11 +60,11 @@ template Census(nLevels) {
 	component zkCensusKey = Poseidon(1);
 	zkCensusKey.inputs[0] <== secretKey;
 
-	component smtClaimExists = SMTVerifier(nLevels);
+	component smtClaimExists = SMTVerifier(realNLevels);
 	smtClaimExists.enabled <== 1;
 	smtClaimExists.fnc <== 0; // 0 as is to verify inclusion
 	smtClaimExists.root <== censusRoot;
-	for (var i=0; i<nLevels; i++) {
+	for (var i=0; i<realNLevels; i++) {
 		smtClaimExists.siblings[i] <== censusSiblings[i];
 	}
 	smtClaimExists.oldKey <== 0;
