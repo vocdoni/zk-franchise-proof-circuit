@@ -43,11 +43,11 @@ async function calculateProof() {
     let witnessCalculator = await WitnessCalc(wasmBuff);
     let wtnsBuff = await witnessCalculator.calculateWTNSBin(inputs,0);
     const { proof, publicSignals } =
-      await snarkjs.groth16.prove("circuit_final.zkey", wtnsBuff);
+      await snarkjs.groth16.prove("circuit.zkey", wtnsBuff);
 
     <!-- fullProve is not ready yet in snarkjs -->
     <!-- const { proof, publicSignals } = -->
-    <!--   await snarkjs.groth16.fullProve(inputs, "circuit.wasm", "circuit_final.zkey"); -->
+    <!--   await snarkjs.groth16.fullProve(inputs, "circuit.wasm", "circuit.zkey"); -->
 
     proofComponent.innerHTML = JSON.stringify(proof, null, 1);
     pubinputsComponent.innerHTML = JSON.stringify(publicSignals, null, 1);

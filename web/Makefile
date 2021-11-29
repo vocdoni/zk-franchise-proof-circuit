@@ -4,7 +4,7 @@ BUILD=build
 RELEASE=release
 
 all: $(RELEASE)/circuit.wasm \
-     $(RELEASE)/circuit_final.zkey \
+     $(RELEASE)/circuit.zkey \
      $(RELEASE)/verification_key.json \
      $(RELEASE)/snarkjs.min.js \
      $(RELEASE)/index.html
@@ -21,13 +21,13 @@ $(RELEASE)/snarkjs.min.js: $(RELEASE)
 $(RELEASE)/index.html: $(RELEASE)
 	cp index.html $(RELEASE)
 
-$(RELEASE)/circuit_final.zkey $(RELEASE)/verification_key.json: $(BUILD)/ $(BUILD)/circuit.r1cs $(BUILD)/pot_final.ptau
+$(RELEASE)/circuit.zkey $(RELEASE)/verification_key.json: $(BUILD)/ $(BUILD)/circuit.r1cs $(BUILD)/pot_final.ptau
 	$(SNARKJS) zkey new $(BUILD)/circuit.r1cs $(BUILD)/pot_final.ptau $(BUILD)/circuit_0000.zkey
 	$(SNARKJS) zkey contribute $(BUILD)/circuit_0000.zkey $(BUILD)/circuit_0001.zkey --name=contributor -v -e=random2
 	$(SNARKJS) zkey verify $(BUILD)/circuit.r1cs $(BUILD)/pot_final.ptau $(BUILD)/circuit_0001.zkey
-	$(SNARKJS) zkey beacon $(BUILD)/circuit_0001.zkey $(RELEASE)/circuit_final.zkey 0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f 10 -n=Final
-	$(SNARKJS) zkey verify $(BUILD)/circuit.r1cs $(BUILD)/pot_final.ptau $(RELEASE)/circuit_final.zkey
-	$(SNARKJS) zkey export verificationkey $(RELEASE)/circuit_final.zkey $(RELEASE)/verification_key.json
+	$(SNARKJS) zkey beacon $(BUILD)/circuit_0001.zkey $(RELEASE)/circuit.zkey 0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f 10 -n=Final
+	$(SNARKJS) zkey verify $(BUILD)/circuit.r1cs $(BUILD)/pot_final.ptau $(RELEASE)/circuit.zkey
+	$(SNARKJS) zkey export verificationkey $(RELEASE)/circuit.zkey $(RELEASE)/verification_key.json
 
 $(RELEASE)/circuit.wasm $(BUILD)/circuit.r1cs: $(BUILD) $(RELEASE) circuit.circom
 	$(CIRCOM) circuit.circom --r1cs --wasm --sym
