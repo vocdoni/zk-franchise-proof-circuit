@@ -1,40 +1,38 @@
-pragma circom 2.0.0;
+pragma circom 2.1.0;
 
 /*
-# credential.circom
-
 Circuit to check:
-- the prover is the owner of the secret key
-- zkCensusKey (hash of the user's secret key) belongs to the census
-	- the secret key is inside a Hash, which is inside the Merkletree with
-	  the CensusRoot (key=index), value=zkCensusKey)
-- H(secretKey, processID) == nullifier
-	- to avoid proof reusability
+- the prover is the owner of the private key
+- keyHash (hash of the user's public key) belongs to the census
+        - the public key is generated based on the provided private key
+        - the public key is inside a hash, which is inside the Merkletree
+          with the CensusRoot and siblings (key=keyHash, value=weight)
+- H(private key, processID) == nullifier
+    - to avoid proof reusability
 
 
                        +----------+
                        |          |
-PUB_censusRoot+------->+          |(key)<-----+PRI_index
+PUB_censusRoot+------->+          |(value)<-----+PUB_weight
                        |          |
-                       | SMT      |            +----------+
-                       | Verifier |            |          |
-PRI_siblings+--------->+          |(value)<----+ Poseidon +<-----+--+PRI_secretKey
-                       |          |            |          |      |
-                       +----------+            +----------+      |
-                                                                 |
-                                     +----------+                |
-                      +----+         |          +<---------------+
+                       | SMT      |         +----------+    +------------+
+                       | Verifier |         |          |    |            |
+PRI_siblings+--------->+          |(key)<---+ Poseidon +<---+ publickKey +--+--+PRI_privateKey
+                       |          |         |          |    |            |  |
+                       +----------+         +----------+    +------------+  |
+                                                                            |
+                                     +----------+                           |
+                      +----+         |          +<--------------------------+
 PUB_nullifier+------->+ == +<--------+ Poseidon |<-----------+PUB_processID_0
                       +----+         |          +<-----------+PUB_processID_1
                                      +----------+
 PUB_voteHash
 
-
-
 */
 
-include "../node_modules/circomlib/circuits/comparators.circom";
+include "../node_modules/circomlib/circuits/babyjub.circom";
 include "../node_modules/circomlib/circuits/poseidon.circom";
+include "../node_modules/circomlib/circuits/comparators.circom";
 include "../node_modules/circomlib/circuits/smt/smtverifier.circom";
 
 template Census(nLevels) {
@@ -45,6 +43,7 @@ template Census(nLevels) {
 
 	// defined by the user
 	signal input nullifier; // public
+    signal input weight; // public
 	// voteHash is not operated inside the circuit, assuming that in
 	// Circom an input that is not used will be included in the constraints
 	// system and in the witness
@@ -52,14 +51,18 @@ template Census(nLevels) {
 
 	// private signals
 	signal input censusSiblings[realNLevels];
-	signal input index;
-	signal input secretKey;
+	signal input privateKey;
 
+    // compute publicKey
+    component babyPbk = BabyPbk();
+    babyPbk.in <== privateKey;
 
-	// compute zkCensusKey, which will be at the leaf
-	component zkCensusKey = Poseidon(1);
-	zkCensusKey.inputs[0] <== secretKey;
+	// compute keyHash, which will be at the leaf
+	component keyHash = Poseidon(2);
+	keyHash.inputs[0] <== babyPbk.Ax;
+    keyHash.inputs[1] <== babyPbk.Ay;
 
+    // check the Merkletree with CensusRoot, siblings, keyHash and weight
 	component smtClaimExists = SMTVerifier(realNLevels);
 	smtClaimExists.enabled <== 1;
 	smtClaimExists.fnc <== 0; // 0 as is to verify inclusion
@@ -70,12 +73,12 @@ template Census(nLevels) {
 	smtClaimExists.oldKey <== 0;
 	smtClaimExists.oldValue <== 0;
 	smtClaimExists.isOld0 <== 0;
-	smtClaimExists.key <== index;
-	smtClaimExists.value <== zkCensusKey.out;
+	smtClaimExists.key <== keyHash.out;
+	smtClaimExists.value <== weight;
 
-	// check nullifier
+	// check nullifier (electionID + privateKey)
 	component computedNullifier = Poseidon(3);
-	computedNullifier.inputs[0] <== secretKey;
+	computedNullifier.inputs[0] <== privateKey;
 	computedNullifier.inputs[1] <== processId[0];
 	computedNullifier.inputs[2] <== processId[1];
 	component checkNullifier = ForceEqualIfEnabled();

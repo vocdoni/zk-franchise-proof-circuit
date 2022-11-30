@@ -46,12 +46,12 @@ describe("lib test", function () {
     });
 
     it("Test Census 3lvl", async () => {
-        const voter = new Voter("3876493977147089964395646989418653640709890493868463039177063670701706079087");
+        const voter = new Voter("28156abe7fe2fd433dc9df969286b96666489bac508612d0e16593e944c4f69f", 1);
 
         const proc = new Process( 1, 4);
-        voter.index = await proc.addCensus(await voter.getZkCensusKey());
+        const pubKey = await proc.addCensus(await voter.getZkCensusKey(), voter.weight);
 
-        const voterData = await proc.voterData(voter.index);
+        const voterData = await proc.voterData(pubKey);
 
         const votePreHash = Buffer.from("test", "utf-8"); // this would be the bytes of the user vote values array, or the encrypted votes
         const voteHash = computeVoteHash(votePreHash);
@@ -62,12 +62,12 @@ describe("lib test", function () {
     });
 
     it("Test Census 9lvl", async () => {
-        const voter = new Voter("3876493977147089964395646989418653640709890493868463039177063670701706079087");
+        const voter = new Voter("28156abe7fe2fd433dc9df969286b96666489bac508612d0e16593e944c4f69f", 1);
 
         const proc = new Process(1, 10);
-        voter.index = await proc.addCensus(await voter.getZkCensusKey());
+        const pubKey = await proc.addCensus(await voter.getZkCensusKey(), voter.weight);
 
-        const voterData = await proc.voterData(voter.index);
+        const voterData = await proc.voterData(pubKey);
 
         const votePreHash = Buffer.from("test", "utf-8"); // this would be the bytes of the user vote values array, or the encrypted votes
         const voteHash = computeVoteHash(votePreHash);
@@ -79,12 +79,12 @@ describe("lib test", function () {
 
 
     it("Test Census 19lvl", async () => {
-        const voter = new Voter("3876493977147089964395646989418653640709890493868463039177063670701706079087");
+        const voter = new Voter("28156abe7fe2fd433dc9df969286b96666489bac508612d0e16593e944c4f69f", 1);
 
         const proc = new Process(1, 20);
-        voter.index = await proc.addCensus(await voter.getZkCensusKey());
+        const pubKey = await proc.addCensus(await voter.getZkCensusKey(), voter.weight);
 
-        const voterData = await proc.voterData(voter.index);
+        const voterData = await proc.voterData(pubKey);
 
         const votePreHash = Buffer.from("test", "utf-8"); // this would be the bytes of the user vote values array, or the encrypted votes
         const voteHash = computeVoteHash(votePreHash);

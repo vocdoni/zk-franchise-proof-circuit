@@ -3,12 +3,14 @@ package main
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/big"
+	"os"
 	"testing"
 
+	"github.com/iden3/go-iden3-crypto/babyjub"
 	"github.com/iden3/go-iden3-crypto/poseidon"
 	"github.com/stretchr/testify/assert"
 	"github.com/vocdoni/arbo"
@@ -27,43 +29,44 @@ func testCensus(t *testing.T, inputsFileName string, nLevels, nPaddingLeafs int)
 	// --- User side
 	// -------------
 	// new babyjubjub PrivateKey
-	secretKeyStr := "3876493977147089964395646989418653640709890493868463039177063670701706079087"
-	secretKey, ok := new(big.Int).SetString(secretKeyStr, 10)
-	assert.True(t, ok)
+	var privateKeyStr = "28156abe7fe2fd433dc9df969286b96666489bac508612d0e16593e944c4f69f"
+	var privateKey babyjub.PrivateKey
+	if _, err := hex.Decode(privateKey[:], []byte(privateKeyStr)); err != nil {
+		panic(err)
+	}
 
 	// --- Org side
 	// ------------
 	// new CensusTree
 	censusTree, err := arbotree.NewTree("test0", t.TempDir(), nLevels, arbo.HashFunctionPoseidon)
 	assert.Nil(t, err)
-	index := big.NewInt(0)
 
-	secretKeyHashBI, err := poseidon.Hash([]*big.Int{
-		secretKey,
+	var weight = new(big.Int).SetInt64(1)
+	publicKeyHash, err := poseidon.Hash([]*big.Int{
+		privateKey.Public().X,
+		privateKey.Public().Y,
 	})
-	bLen := arbo.HashFunctionPoseidon.Len()
-	indexBytes := arbo.BigIntToBytes(bLen, index)
-	secretKeyHashBytes := arbo.BigIntToBytes(bLen, secretKeyHashBI)
-
-	// add keyHash to CensusMerkleTree
-	err = censusTree.Add(indexBytes, secretKeyHashBytes)
 	assert.Nil(t, err)
-	userIndex := index
-	index = new(big.Int).Add(index, big.NewInt(1))
+
+	var bLen = arbo.HashFunctionPoseidon.Len()
+	var weightBytes = arbo.BigIntToBytes(bLen, weight)
+	var publicKeyHashBytes = arbo.BigIntToBytes(bLen, publicKeyHash)
+
+	// add publicKeyHash to CensusMerkleTree
+	err = censusTree.Add(publicKeyHashBytes, weightBytes)
+	assert.Nil(t, err)
 
 	// add extra claims to fill the MerkleTree
 	for i := 0; i < nPaddingLeafs; i++ {
-		indexBytes := arbo.BigIntToBytes(bLen, index)
-		err = censusTree.Add(
-			indexBytes,
-			arbo.BigIntToBytes(bLen, big.NewInt(int64(i))))
+		var newWeight = arbo.BigIntToBytes(bLen, big.NewInt(int64(i+1)))
+		var mockPublicKey = arbo.BigIntToBytes(bLen, big.NewInt(int64(i)))
+
+		err = censusTree.Add(mockPublicKey, newWeight)
 		assert.Nil(t, err)
-		index = new(big.Int).Add(index, big.NewInt(1))
 	}
 
 	// get merkleproof
-	userIndexBytes := arbo.BigIntToBytes(bLen, userIndex)
-	proof, err := censusTree.GenProof(userIndexBytes, secretKeyHashBytes)
+	proof, err := censusTree.GenProof(publicKeyHashBytes, weightBytes)
 	assert.Nil(t, err)
 	siblings, err := arbo.UnpackSiblings(arbo.HashFunctionPoseidon, proof)
 	assert.Nil(t, err)
@@ -73,7 +76,8 @@ func testCensus(t *testing.T, inputsFileName string, nLevels, nPaddingLeafs int)
 	siblings = append(siblings, []byte{0})
 	var siblingsStr []string
 	for i := 0; i < len(siblings); i++ {
-		siblingsStr = append(siblingsStr, arbo.BytesToBigInt(siblings[i][:]).String())
+		var sibling = arbo.BytesToBigInt(siblings[i]).String()
+		siblingsStr = append(siblingsStr, sibling)
 	}
 	jsonSiblings, err := json.Marshal(siblingsStr)
 	assert.Nil(t, err)
@@ -97,22 +101,23 @@ func testCensus(t *testing.T, inputsFileName string, nLevels, nPaddingLeafs int)
 	}
 	processIdStr := fmt.Sprintf("[\"%s\", \"%s\"]", processId[0].String(), processId[1].String())
 	nullifier, err := poseidon.Hash([]*big.Int{
-		secretKey,
+		babyjub.SkToBigInt(&privateKey),
 		processId[0],
 		processId[1],
 	})
+	assert.Nil(t, err)
 
 	w := bytes.NewBufferString("")
 	fmt.Fprintf(w, "{\n")
-	fmt.Fprintf(w, `	"censusRoot": "%s",`+"\n", arbo.BytesToBigInt(rootBytes[:]))
+	fmt.Fprintf(w, `	"censusRoot": "%s",`+"\n", arbo.BytesToBigInt(rootBytes))
 	fmt.Fprintf(w, `	"censusSiblings": %s,`+"\n", jsonSiblings) // TMP
-	fmt.Fprintf(w, `	"index": "%s",`+"\n", userIndex.String())
-	fmt.Fprintf(w, `	"secretKey": "%s",`+"\n", secretKey.String())
+	fmt.Fprintf(w, `	"weight": "%s",`+"\n", weight.String())
+	fmt.Fprintf(w, `	"privateKey": "%s",`+"\n", babyjub.SkToBigInt(&privateKey))
 	fmt.Fprintf(w, `	"voteHash": %s,`+"\n", voteHash)
 	fmt.Fprintf(w, `	"processId": %s,`+"\n", processIdStr)
 	fmt.Fprintf(w, `	"nullifier": "%s"`+"\n", nullifier.String())
 	fmt.Fprintln(w, "}")
 
-	err = ioutil.WriteFile(inputsFileName, w.Bytes(), 0600)
+	err = os.WriteFile(inputsFileName, w.Bytes(), 0600)
 	assert.Nil(t, err)
 }

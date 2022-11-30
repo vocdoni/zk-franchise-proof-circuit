@@ -1,25 +1,27 @@
 const bigInt = require("snarkjs").bigInt;
 const { assert } = require("chai");
-const { newMemEmptyTrie, buildPoseidon } = require("circomlibjs");
+const { newMemEmptyTrie, buildPoseidon, buildEddsa, buildBabyjub } = require("circomlibjs");
 const crypto = require("crypto");
+const createBlakeHash = require("blake-hash");
+const Scalar = require("ffjavascript").Scalar;
+const ffutils = require("ffjavascript").utils;
+
 
 class Process {
    constructor(processId, levels) {
       this.processId = getProcessId(processId);
       this.levels = levels+1;
       this.tree = null;
-      this.index = 0;
    }
-   async addCensus(secretKeyHash) {
+   async addCensus(publicKey, weight) {
       if (this.tree === null) {
          this.tree = await newMemEmptyTrie();
       }
-      await this.tree.insert(this.index, secretKeyHash);
-      this.index++;
-      return this.index-1;
+      await this.tree.insert(publicKey, weight);
+      return publicKey;
    }
-   async voterData(index) {
-      const res = await this.tree.find(index);
+   async voterData(publicKey) {
+      const res = await this.tree.find(publicKey);
       assert(res.found);
       let siblings = res.siblings;
       while (siblings.length < this.levels) siblings.push(BigInt(0));
@@ -33,34 +35,44 @@ class Process {
 }
 
 class Voter {
-   constructor(secretKey) {
-      this.key = { secretKey }
-      this.index = 0;
+   constructor(rawPrivateKey, weight) {
+      this.key = { rawPrivateKey }
+      this.weight = weight;
    }
 
    async getZkCensusKey() {
+      const eddsa = await buildEddsa();
       const poseidon = await buildPoseidon();
-      const F = poseidon.F;
-      return poseidon([this.key.secretKey]);
+      const babyJub = await buildBabyjub();
+      
+      const rawPrivateKeyBuffer = Buffer.from(this.key.rawPrivateKey, "hex");
+      const rawPrivateKeyHash = eddsa.pruneBuffer(createBlakeHash("blake512").update(rawPrivateKeyBuffer).digest().slice(0, 32));
+      
+      this.key.privateKey = Scalar.shr(ffutils.leBuff2int(rawPrivateKeyHash), 3);
+      const A = babyJub.mulPointEscalar(babyJub.Base8, this.key.privateKey);
+
+      this.key.publicKey = { x: A[0], y: A[1] }
+
+      return poseidon([this.key.publicKey.x, this.key.publicKey.y]);
    }
 
    async vote(voterData, voteHash) {
       const poseidon = await buildPoseidon();
       const F = poseidon.F;
-      const nullifierBytes = poseidon([this.key.secretKey, voterData.processId[0], voterData.processId[1]]);
+      const nullifierBytes = poseidon([this.key.privateKey, voterData.processId[0], voterData.processId[1]]);
       const nullifier = F.toObject(nullifierBytes).toString();
-
 
       const root = F.toObject(voterData.root).toString();
       const siblingsStr = [];
       for (let i=0;i<voterData.siblings.length;i++) {
          siblingsStr.push(voterData.siblings[i].toString());
       }
+
       return {
          censusRoot: root.toString(),
          censusSiblings: siblingsStr,
-         index: this.index.toString(),
-         secretKey : BigInt(this.key.secretKey).toString(),
+         weight: this.weight.toString(),
+         privateKey : this.key.privateKey,
          voteHash: [
             voteHash[0].toString(),
             voteHash[1].toString(),
