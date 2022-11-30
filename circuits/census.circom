@@ -4,28 +4,28 @@ pragma circom 2.1.0;
 Circuit to check:
 - the prover is the owner of the private key
 - keyHash (hash of the user's public key) belongs to the census
-        - the public key is generated based on the provided private key
-        - the public key is inside a hash, which is inside the Merkletree
-          with the CensusRoot and siblings (key=keyHash, value=weight)
+		- the public key is generated based on the provided private key
+		- the public key is inside a hash, which is inside the Merkletree
+		  with the CensusRoot and siblings (key=keyHash, value=weight)
 - H(private key, processID) == nullifier
-    - to avoid proof reusability
+	- to avoid proof reusability
 
 
-                       +----------+
-                       |          |
+					   +----------+
+					   |          |
 PUB_censusRoot+------->+          |(value)<-----+PUB_weight
-                       |          |
-                       | SMT      |         +----------+    +------------+
-                       | Verifier |         |          |    |            |
+					   |          |
+					   | SMT      |         +----------+    +------------+
+					   | Verifier |         |          |    |            |
 PRI_siblings+--------->+          |(key)<---+ Poseidon +<---+ publickKey +--+--+PRI_privateKey
-                       |          |         |          |    |            |  |
-                       +----------+         +----------+    +------------+  |
-                                                                            |
-                                     +----------+                           |
-                      +----+         |          +<--------------------------+
+					   |          |         |          |    |            |  |
+					   +----------+         +----------+    +------------+  |
+																			|
+									 +----------+                           |
+					  +----+         |          +<--------------------------+
 PUB_nullifier+------->+ == +<--------+ Poseidon |<-----------+PUB_processID_0
-                      +----+         |          +<-----------+PUB_processID_1
-                                     +----------+
+					  +----+         |          +<-----------+PUB_processID_1
+									 +----------+
 PUB_voteHash
 
 */
@@ -43,7 +43,7 @@ template Census(nLevels) {
 
 	// defined by the user
 	signal input nullifier; // public
-    signal input weight; // public
+	signal input weight; // public
 	// voteHash is not operated inside the circuit, assuming that in
 	// Circom an input that is not used will be included in the constraints
 	// system and in the witness
@@ -53,16 +53,16 @@ template Census(nLevels) {
 	signal input censusSiblings[realNLevels];
 	signal input privateKey;
 
-    // compute publicKey
-    component babyPbk = BabyPbk();
-    babyPbk.in <== privateKey;
+	// compute publicKey
+	component babyPbk = BabyPbk();
+	babyPbk.in <== privateKey;
 
 	// compute keyHash, which will be at the leaf
 	component keyHash = Poseidon(2);
 	keyHash.inputs[0] <== babyPbk.Ax;
-    keyHash.inputs[1] <== babyPbk.Ay;
+	keyHash.inputs[1] <== babyPbk.Ay;
 
-    // check the Merkletree with CensusRoot, siblings, keyHash and weight
+	// check the Merkletree with CensusRoot, siblings, keyHash and weight
 	component smtClaimExists = SMTVerifier(realNLevels);
 	smtClaimExists.enabled <== 1;
 	smtClaimExists.fnc <== 0; // 0 as is to verify inclusion

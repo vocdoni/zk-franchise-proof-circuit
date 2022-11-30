@@ -14,7 +14,7 @@ import (
 	"github.com/iden3/go-iden3-crypto/poseidon"
 	"github.com/stretchr/testify/assert"
 	"github.com/vocdoni/arbo"
-	"go.vocdoni.io/dvote/censustree/arbotree"
+	"go.vocdoni.io/dvote/db"
 )
 
 func TestCensus(t *testing.T) {
@@ -38,7 +38,10 @@ func testCensus(t *testing.T, inputsFileName string, nLevels, nPaddingLeafs int)
 	// --- Org side
 	// ------------
 	// new CensusTree
-	censusTree, err := arbotree.NewTree("test0", t.TempDir(), nLevels, arbo.HashFunctionPoseidon)
+	database, err := db.NewBadgerDB(t.TempDir())
+	assert.Nil(t, err)
+
+	censusTree, err := arbo.NewTree(database, nLevels, arbo.HashFunctionPoseidon)
 	assert.Nil(t, err)
 
 	var weight = new(big.Int).SetInt64(1)
@@ -66,9 +69,14 @@ func testCensus(t *testing.T, inputsFileName string, nLevels, nPaddingLeafs int)
 	}
 
 	// get merkleproof
-	proof, err := censusTree.GenProof(publicKeyHashBytes, weightBytes)
+	leafKey, leafValue, packedSiblings, exists, err := censusTree.GenProof(publicKeyHashBytes)
+	assert.ElementsMatch(t, publicKeyHashBytes, leafKey)
+	assert.ElementsMatch(t, weightBytes, leafValue)
+	assert.True(t, exists)
 	assert.Nil(t, err)
-	siblings, err := arbo.UnpackSiblings(arbo.HashFunctionPoseidon, proof)
+
+	// get siblings list
+	siblings, err := arbo.UnpackSiblings(arbo.HashFunctionPoseidon, packedSiblings)
 	assert.Nil(t, err)
 	for i := len(siblings); i < nLevels; i++ {
 		siblings = append(siblings, []byte{0})
