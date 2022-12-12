@@ -5,29 +5,27 @@ Circuit to check:
 - the prover is the owner of the private key
 - keyHash (hash of the user's public key) belongs to the census
 		- the public key is generated based on the provided private key
-		- the public key is inside a hash, which is inside the Merkletree
-		  with the CensusRoot and siblings (key=keyHash, value=weight)
+		- the public key is inside a hash, which is inside the Merkletree with 
+		the CensusRoot and siblings (key=keyHash, value=weight)
 - H(private key, processID) == nullifier
 	- to avoid proof reusability
 
-
-					   +----------+
-					   |          |
-PUB_censusRoot+------->+          |(value)<-----+PUB_weight
-					   |          |
-					   | SMT      |         +----------+    +------------+
-					   | Verifier |         |          |    |            |
-PRI_siblings+--------->+          |(key)<---+ Poseidon +<---+ publickKey +--+--+PRI_privateKey
-					   |          |         |          |    |            |  |
-					   +----------+         +----------+    +------------+  |
+						+----------+
+						|          |
+	PUB_censusRoot+---->+          |(value)<-----+PUB_weight
+						|          |
+						| SMT      |         +----------+    +------------+
+						| Verifier |         |          |    |            |
+	PRI_siblings+------>+          |(key)<---+ Poseidon +<---+ publickKey +-+---+PRI_privateKey
+						|          |         |          |    |            | |
+						+----------+         +----------+    +------------+ |
 																			|
-									 +----------+                           |
-					  +----+         |          +<--------------------------+
-PUB_nullifier+------->+ == +<--------+ Poseidon |<-----------+PUB_processID_0
-					  +----+         |          +<-----------+PUB_processID_1
-									 +----------+
-PUB_voteHash
-
+									+----------+							|
+						+----+		|          +<---------------------------+
+	PUB_nullifier+----->+ == +<-----+ Poseidon |<------------+PUB_processID_0
+						+----+		|          +<------------+PUB_processID_1
+									+----------+
+	PUB_voteHash†
 */
 
 include "../node_modules/circomlib/circuits/babyjub.circom";
