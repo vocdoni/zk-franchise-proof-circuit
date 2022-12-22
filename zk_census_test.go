@@ -20,8 +20,13 @@ import (
 	"go.vocdoni.io/dvote/db/badgerdb"
 )
 
-func getEnvVars(t *testing.T) (string, int, int) {
-	environment, nLevels, nPaddingLeafs := "dev", 16, 100
+func getEnvVars(t *testing.T) (string, string, int, int) {
+	circuitName, environment, nLevels, nPaddingLeafs := "zkCensus", "dev", 16, 100
+
+	circuitNameVar := os.Getenv("CIRCUIT_NAME")
+	if circuitNameVar != "" {
+		circuitName = circuitNameVar
+	}
 
 	envVar := os.Getenv("ENVIRONMENT")
 	if envVar != "" {
@@ -42,14 +47,14 @@ func getEnvVars(t *testing.T) (string, int, int) {
 		nPaddingLeafs = numPaddingLeafs
 	}
 
-	return environment, nLevels, nPaddingLeafs
+	return circuitName, environment, nLevels, nPaddingLeafs
 }
 
 func Test_genInputs(t *testing.T) {
 	t.Log("Generating example of circuits inputs...")
 	c := qt.New(t)
 
-	env, nLevels, nPaddingLeafs := getEnvVars(t)
+	name, env, nLevels, nPaddingLeafs := getEnvVars(t)
 
 	// Generate babyjubjub keys
 	needlePrivateKey := "28156abe7fe2fd433dc9df969286b96666489bac508612d0e16593e944c4f69f"
@@ -158,7 +163,7 @@ func Test_genInputs(t *testing.T) {
 	jsonResult, err := json.Marshal(result)
 	c.Assert(err, qt.IsNil)
 
-	output := fmt.Sprintf("./artifacts/%s/%d/inputs_example.json", env, nLevels)
+	output := fmt.Sprintf("./artifacts/%s/%s/%d/inputs_example.json", name, env, nLevels)
 	err = os.WriteFile(output, jsonResult, 0644)
 	c.Assert(err, qt.IsNil)
 }
@@ -166,8 +171,8 @@ func Test_genInputs(t *testing.T) {
 func Test_genProof(t *testing.T) {
 	t.Log("Generating proof for the circuit...")
 
-	env, nLevels, _ := getEnvVars(t)
-	basePath := fmt.Sprintf("./artifacts/%s/%d", env, nLevels)
+	name, env, nLevels, _ := getEnvVars(t)
+	basePath := fmt.Sprintf("./artifacts/%s/%s/%d", name, env, nLevels)
 
 	// Get files
 	zkey, err := os.ReadFile(basePath + "/proving_key.zkey")
@@ -195,8 +200,8 @@ func Test_genProof(t *testing.T) {
 func Test_verifyProof(t *testing.T) {
 	t.Log("Verifiying proof of the circuit...")
 
-	env, nLevels, _ := getEnvVars(t)
-	basePath := fmt.Sprintf("./artifacts/%s/%d", env, nLevels)
+	name, env, nLevels, _ := getEnvVars(t)
+	basePath := fmt.Sprintf("./artifacts/%s/%s/%d", name, env, nLevels)
 
 	// Get files
 	vkey, err := os.ReadFile(basePath + "/verification_key.json")

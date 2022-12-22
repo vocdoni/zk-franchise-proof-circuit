@@ -20,7 +20,7 @@ test:
 ifeq (, $(wildcard ./artifacts/))
 	$(error "run 'make compile' command first")
 else
-	@go test -v ./proof_test.go
+	@go test -v ./...
 endif
 
 artifacts:

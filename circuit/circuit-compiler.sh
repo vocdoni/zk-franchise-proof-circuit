@@ -20,9 +20,10 @@ HASH=sha256sum
 SNARKJS="$(readlink -f "./node_modules/.bin/snarkjs")"
 
 # resolve paths of inputs and outputs
+CIRCUIT_NAME="${2:-zkCensus}"
 CIRCUIT=$(readlink -f "$1")
-ARTIFACTS="$(readlink -f "$PWD/../artifacts")"
-TRASH="$PWD/power-of-tau"
+ARTIFACTS="$(readlink -f "$PWD/../artifacts/$CIRCUIT_NAME")"
+TRASH="$PWD/toxic-waste/$CIRCUIT_NAME"
 
 # check if the provided command as argument is already installed
 try_or_exit() {
