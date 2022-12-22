@@ -1,12 +1,12 @@
 module github.com/vocdoni/zk-franchise-proof-circuit
 
-go 1.19
+go 1.18
 
 require (
 	github.com/frankban/quicktest v1.14.4
 	github.com/iden3/go-iden3-crypto v0.0.13
 	github.com/vocdoni/arbo v0.0.0-20220903144204-c3e910e2afc6
-	go.vocdoni.io/dvote v1.0.4-0.20221220135417-7128653b708d
+	go.vocdoni.io/dvote v1.0.4-0.20221221090105-f3678a05bf5f
 )
 
 require (
