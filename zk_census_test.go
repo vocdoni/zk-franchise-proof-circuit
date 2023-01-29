@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"math"
 	"math/big"
 	"os"
 	"strconv"
@@ -14,14 +13,14 @@ import (
 	qt "github.com/frankban/quicktest"
 	"github.com/iden3/go-iden3-crypto/babyjub"
 	"github.com/iden3/go-iden3-crypto/poseidon"
-	"github.com/vocdoni/arbo"
 	"go.vocdoni.io/dvote/crypto/zk/prover"
 	"go.vocdoni.io/dvote/db"
 	"go.vocdoni.io/dvote/db/badgerdb"
+	"go.vocdoni.io/dvote/tree/arbo"
 )
 
 func getEnvVars(t *testing.T) (string, string, int, int) {
-	circuitName, environment, nLevels, nPaddingLeafs := "zkCensus", "dev", 16, 100
+	circuitName, environment, nLevels, nPaddingLeafs := "zkCensus", "dev", 250, 100
 
 	circuitNameVar := os.Getenv("CIRCUIT_NAME")
 	if circuitNameVar != "" {
@@ -42,7 +41,7 @@ func getEnvVars(t *testing.T) (string, string, int, int) {
 		nLevels = numNLevels
 	}
 
-	nPaddingLeafsVar := os.Getenv("NLEVELS")
+	nPaddingLeafsVar := os.Getenv("PADDING")
 	if numPaddingLeafs, err := strconv.Atoi(nPaddingLeafsVar); err == nil {
 		nPaddingLeafs = numPaddingLeafs
 	}
@@ -55,6 +54,12 @@ func Test_genInputs(t *testing.T) {
 	c := qt.New(t)
 
 	name, env, nLevels, nPaddingLeafs := getEnvVars(t)
+	t.Logf("Config loaded:%v\n", map[string]interface{}{
+		"name":          name,
+		"env":           env,
+		"nLevels":       nLevels,
+		"nPaddingLeafs": nPaddingLeafs,
+	})
 
 	// Generate babyjubjub keys
 	needlePrivateKey := "28156abe7fe2fd433dc9df969286b96666489bac508612d0e16593e944c4f69f"
@@ -67,7 +72,7 @@ func Test_genInputs(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 	censusTree, err := arbo.NewTree(arbo.Config{
 		Database:     database,
-		MaxLevels:    int(math.Pow(2.0, float64(nLevels))),
+		MaxLevels:    nLevels,
 		HashFunction: arbo.HashFunctionPoseidon,
 	})
 	c.Assert(err, qt.IsNil)

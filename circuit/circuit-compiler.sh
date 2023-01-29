@@ -54,7 +54,7 @@ power_of_tau() {
 		log "computing power-of-tau..."
 		mkdir -p $TRASH
 		# create the ceremony
-		$SNARKJS powersoftau new bn128 15 $TRASH/pot12_0000.ptau -v
+		$SNARKJS powersoftau new bn128 20 $TRASH/pot12_0000.ptau -v
 		# first contribution
 		$SNARKJS powersoftau contribute $TRASH/pot12_0000.ptau $TRASH/pot12_0001.ptau --name="First contribution" -v -e
 		# second contribution
@@ -155,7 +155,7 @@ main() {
 	initial_setup
 	power_of_tau
 
-	versions=( 3 4 10 16 )
+	versions=( 3 4 10 16 250 )
 	for nlevels in "${versions[@]}"
 	do
 		compile_circuit $nlevels || error "error compiling circuits for $nlevels leves and $ENVIRONMENT environment"
