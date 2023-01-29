@@ -10,21 +10,21 @@ Circuit to check:
 - H(private key, processID) == nullifier
 	- to avoid proof reusability
 
+			    	+----------+
+				|          |
+	PUB_censusRoot+-------->+          |(value)<-----+PUB_weight
+				|          |
+				| SMT      |         +----------+    +------------+
+				| Verifier |         |          |    |            |
+	PRI_siblings+---------->+          |(key)<---+ Poseidon +<---+ publickKey +-+---+PRI_privateKey
+				|          |         |          |    |            | |
+				+----------+         +----------+    +------------+ |
+	       									    |
+						+----------+			    |
+				+----+		|          +<-----------------------+
+	PUB_nullifier+--------->+ == +<---------+ Poseidon |<------------+PUB_processID_0
+				+----+		|          +<------------+PUB_processID_1
 						+----------+
-						|          |
-	PUB_censusRoot+---->+          |(value)<-----+PUB_weight
-						|          |
-						| SMT      |         +----------+    +------------+
-						| Verifier |         |          |    |            |
-	PRI_siblings+------>+          |(key)<---+ Poseidon +<---+ publickKey +-+---+PRI_privateKey
-						|          |         |          |    |            | |
-						+----------+         +----------+    +------------+ |
-																			|
-									+----------+							|
-						+----+		|          +<---------------------------+
-	PUB_nullifier+----->+ == +<-----+ Poseidon |<------------+PUB_processID_0
-						+----+		|          +<------------+PUB_processID_1
-									+----------+
 	PUB_voteHash†
 */
 
