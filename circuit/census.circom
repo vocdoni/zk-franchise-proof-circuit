@@ -33,6 +33,24 @@ include "node_modules/circomlib/circuits/poseidon.circom";
 include "node_modules/circomlib/circuits/comparators.circom";
 include "node_modules/circomlib/circuits/smt/smtverifier.circom";
 
+
+function truncate(in, n) {
+    var pos = 10**n;
+    var partial = in - (in % pos);
+    var res = partial / pos;
+    return res;
+}
+
+function length(in) {
+    var iter = in;
+    var len = 0;
+    while (iter > 0) {
+        len++;
+        iter = truncate(iter, 1);
+    }
+    return len;
+}
+
 template Census(nLevels) {
 	var realNLevels = nLevels+1;
 	// defined by the process
@@ -50,6 +68,7 @@ template Census(nLevels) {
 	// private signals
 	signal input censusSiblings[realNLevels];
 	signal input privateKey;
+	signal input shifted;
 
 	// compute publicKey
 	component babyPbk = BabyPbk();
@@ -59,6 +78,9 @@ template Census(nLevels) {
 	component keyHash = Poseidon(2);
 	keyHash.inputs[0] <== babyPbk.Ax;
 	keyHash.inputs[1] <== babyPbk.Ay;
+
+	var pubKey = keyHash.out;
+	var tPubKey = truncate(pubKey, shifted);
 
 	// check the Merkletree with CensusRoot, siblings, keyHash and weight
 	component smtClaimExists = SMTVerifier(realNLevels);
@@ -71,7 +93,7 @@ template Census(nLevels) {
 	smtClaimExists.oldKey <== 0;
 	smtClaimExists.oldValue <== 0;
 	smtClaimExists.isOld0 <== 0;
-	smtClaimExists.key <== keyHash.out;
+	smtClaimExists.key <-- tPubKey;
 	smtClaimExists.value <== weight;
 
 	// check nullifier (electionID + privateKey)

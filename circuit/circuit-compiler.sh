@@ -155,7 +155,7 @@ main() {
 	initial_setup
 	power_of_tau
 
-	versions=( 3 4 10 16 250 )
+	versions=( 3 4 10 16 160 250 )
 	for nlevels in "${versions[@]}"
 	do
 		compile_circuit $nlevels || error "error compiling circuits for $nlevels leves and $ENVIRONMENT environment"

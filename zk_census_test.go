@@ -19,8 +19,37 @@ import (
 	"go.vocdoni.io/dvote/tree/arbo"
 )
 
-func getEnvVars(t *testing.T) (string, string, int, int) {
-	circuitName, environment, nLevels, nPaddingLeafs := "zkCensus", "dev", 250, 100
+func truncate(input *big.Int, to int64) (*big.Int, int64) {
+	var nBytes = numberOfBytes(input)
+	if nBytes <= to {
+		return input, 0
+	}
+
+	var timesShifted int64 = 0
+	var bTen = new(big.Int).SetInt64(10)
+	for nBytes != to {
+		input = input.Div(input, bTen)
+		nBytes = numberOfBytes(input)
+		timesShifted++
+	}
+
+	return input, timesShifted
+}
+
+func numberOfBytes(input *big.Int) int64 {
+	var nBits int64 = 0
+	base := new(big.Int).SetInt64(2)
+	candidate := new(big.Int).Exp(base, big.NewInt(nBits), nil)
+	for input.Cmp(candidate) == 1 {
+		nBits++
+		candidate = candidate.Exp(base, big.NewInt(nBits), nil)
+	}
+
+	return nBits/8 + 1
+}
+
+func getEnvVars(t *testing.T) (string, string, int, int, int) {
+	circuitName, environment, nLevels, keySize, nPaddingLeafs := "zkCensus", "dev", 160, 20, 100
 
 	circuitNameVar := os.Getenv("CIRCUIT_NAME")
 	if circuitNameVar != "" {
@@ -41,23 +70,33 @@ func getEnvVars(t *testing.T) (string, string, int, int) {
 		nLevels = numNLevels
 	}
 
+	keySizeVar := os.Getenv("KEYSIZE")
+	if numKeySize, err := strconv.Atoi(keySizeVar); err == nil {
+		if numKeySize > nLevels/8 {
+			t.Fatal("the key size can not be bigger than ceil(nLevels/8)")
+		}
+
+		keySize = numKeySize
+	}
+
 	nPaddingLeafsVar := os.Getenv("PADDING")
 	if numPaddingLeafs, err := strconv.Atoi(nPaddingLeafsVar); err == nil {
 		nPaddingLeafs = numPaddingLeafs
 	}
 
-	return circuitName, environment, nLevels, nPaddingLeafs
+	return circuitName, environment, nLevels, keySize, nPaddingLeafs
 }
 
 func Test_genInputs(t *testing.T) {
 	t.Log("Generating example of circuits inputs...")
 	c := qt.New(t)
 
-	name, env, nLevels, nPaddingLeafs := getEnvVars(t)
+	name, env, nLevels, keySize, nPaddingLeafs := getEnvVars(t)
 	t.Logf("Config loaded:%v\n", map[string]interface{}{
 		"name":          name,
 		"env":           env,
 		"nLevels":       nLevels,
+		"keySize":       keySize,
 		"nPaddingLeafs": nPaddingLeafs,
 	})
 
@@ -76,7 +115,6 @@ func Test_genInputs(t *testing.T) {
 		HashFunction: arbo.HashFunctionPoseidon,
 	})
 	c.Assert(err, qt.IsNil)
-	bLen := arbo.HashFunctionPoseidon.Len()
 
 	// Define a weight and add it with the public key to the census
 	weight := new(big.Int).SetInt64(1)
@@ -86,8 +124,9 @@ func Test_genInputs(t *testing.T) {
 	})
 	c.Assert(err, qt.IsNil)
 
-	bWeight := arbo.BigIntToBytes(bLen, weight)
-	bPubKey := arbo.BigIntToBytes(bLen, pubKey)
+	truncatedPubKey, timesShifted := truncate(pubKey, int64(keySize))
+	bWeight := arbo.BigIntToBytes(keySize, weight)
+	bPubKey := arbo.BigIntToBytes(keySize, truncatedPubKey)
 
 	err = censusTree.Add(bPubKey, bWeight)
 	c.Assert(err, qt.IsNil)
@@ -96,8 +135,8 @@ func Test_genInputs(t *testing.T) {
 
 	// Add extra voters to the census
 	for i := 0; i < nPaddingLeafs; i++ {
-		weight := arbo.BigIntToBytes(bLen, big.NewInt(int64(i+1)))
-		mockPublicKey := arbo.BigIntToBytes(bLen, big.NewInt(int64(i)))
+		weight := arbo.BigIntToBytes(keySize, big.NewInt(int64(i+1)))
+		mockPublicKey := arbo.BigIntToBytes(keySize, big.NewInt(int64(i)))
 
 		err = censusTree.Add(mockPublicKey, weight)
 		c.Assert(err, qt.IsNil)
@@ -163,6 +202,7 @@ func Test_genInputs(t *testing.T) {
 		"voteHash":       strVoteHash,
 		"processId":      strProcessId,
 		"nullifier":      strNullifier,
+		"shifted":        fmt.Sprint(timesShifted),
 	}
 
 	jsonResult, err := json.Marshal(result)
@@ -176,7 +216,7 @@ func Test_genInputs(t *testing.T) {
 func Test_genProof(t *testing.T) {
 	t.Log("Generating proof for the circuit...")
 
-	name, env, nLevels, _ := getEnvVars(t)
+	name, env, nLevels, _, _ := getEnvVars(t)
 	basePath := fmt.Sprintf("./artifacts/%s/%s/%d", name, env, nLevels)
 
 	// Get files
@@ -205,7 +245,7 @@ func Test_genProof(t *testing.T) {
 func Test_verifyProof(t *testing.T) {
 	t.Log("Verifiying proof of the circuit...")
 
-	name, env, nLevels, _ := getEnvVars(t)
+	name, env, nLevels, _, _ := getEnvVars(t)
 	basePath := fmt.Sprintf("./artifacts/%s/%s/%d", name, env, nLevels)
 
 	// Get files
