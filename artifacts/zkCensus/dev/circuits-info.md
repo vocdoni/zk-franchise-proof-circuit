@@ -33,10 +33,3 @@ c1bad9e7ff7f6700ea4a38956168b2114328c7e12a9fee1f0b05f25a0f62e3d2  /dev/16/circui
 639a0533ddac1004bd7662b9f3bd74a5b236958fbb30465e9e3a966c15e3271d  /dev/160/verification_key.json
 d58d4eaeabdc0bedd78cbcd6aca71f893c6dff9cf76a65d85ec106d45dc138da  /dev/160/circuit.wasm
 ```
-
-## circuit: dev (250 nLevels) file hashes (sha256) 
-```
-c0784e19e43bcfc09f65a86ae109b214f33f57bb8f91350f704b117605fb82de  /dev/250/proving_key.zkey
-5884112617d8068677d2b7389513de37f3c696b45fdbdef7745f1023fa1bd364  /dev/250/verification_key.json
-5fb13debf5c2a28880aa280c9e5e557d3b3230e0798849a0966062e02776a644  /dev/250/circuit.wasm
-```

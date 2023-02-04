@@ -33,22 +33,11 @@ include "node_modules/circomlib/circuits/poseidon.circom";
 include "node_modules/circomlib/circuits/comparators.circom";
 include "node_modules/circomlib/circuits/smt/smtverifier.circom";
 
-
 function truncate(in, n) {
     var pos = 10**n;
     var partial = in - (in % pos);
     var res = partial / pos;
     return res;
-}
-
-function length(in) {
-    var iter = in;
-    var len = 0;
-    while (iter > 0) {
-        len++;
-        iter = truncate(iter, 1);
-    }
-    return len;
 }
 
 template Census(nLevels) {
