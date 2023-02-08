@@ -19,33 +19,22 @@ import (
 	"go.vocdoni.io/dvote/tree/arbo"
 )
 
-func truncate(input *big.Int, to int64) (*big.Int, int64) {
-	var nBytes = numberOfBytes(input)
-	if nBytes <= to {
-		return input, 0
-	}
-
-	var timesShifted int64 = 0
-	var bTen = new(big.Int).SetInt64(10)
-	for nBytes != to {
-		input = input.Div(input, bTen)
-		nBytes = numberOfBytes(input)
-		timesShifted++
-	}
-
-	return input, timesShifted
+// LittleEndianToNBytes truncate the most significant n bytes of the provided
+// little endian number provided and returns into a new big.Int.
+func LittleEndianToNBytes(num *big.Int, n int) *big.Int {
+	// To take the n most significant bytes of a little endian number its needed
+	// to discard the first m bytes, where m = len(numBytes) - n
+	numBytes := num.Bytes()
+	m := len(numBytes) - n
+	return new(big.Int).SetBytes(numBytes[m:])
 }
 
-func numberOfBytes(input *big.Int) int64 {
-	var nBits int64 = 0
-	base := new(big.Int).SetInt64(2)
-	candidate := new(big.Int).Exp(base, big.NewInt(nBits), nil)
-	for input.Cmp(candidate) == 1 {
-		nBits++
-		candidate = candidate.Exp(base, big.NewInt(nBits), nil)
+func BytesToArboStr(input []byte) []string {
+	hash := sha256.Sum256(input)
+	return []string{
+		new(big.Int).SetBytes(arbo.SwapEndianness(hash[:16])).String(),
+		new(big.Int).SetBytes(arbo.SwapEndianness(hash[16:])).String(),
 	}
-
-	return nBits/8 + 1
 }
 
 func getEnvVars(t *testing.T) (string, string, int, int, int) {
@@ -101,7 +90,7 @@ func Test_genInputs(t *testing.T) {
 	})
 
 	// Generate babyjubjub keys
-	needlePrivateKey := "28156abe7fe2fd433dc9df969286b96666489bac508612d0e16593e944c4f69f"
+	needlePrivateKey := "6430ab787ad5130942369901498a118fade013ebab5450efbfb6acac66d8fb88"
 	privateKey := babyjub.PrivateKey{}
 	_, err := hex.Decode(privateKey[:], []byte(needlePrivateKey))
 	c.Assert(err, qt.IsNil)
@@ -124,9 +113,9 @@ func Test_genInputs(t *testing.T) {
 	})
 	c.Assert(err, qt.IsNil)
 
-	truncatedPubKey, timesShifted := truncate(pubKey, int64(keySize))
+	addr := LittleEndianToNBytes(pubKey, keySize)
 	bWeight := arbo.BigIntToBytes(keySize, weight)
-	bPubKey := arbo.BigIntToBytes(keySize, truncatedPubKey)
+	bPubKey := arbo.BigIntToBytes(keySize, addr)
 
 	err = censusTree.Add(bPubKey, bWeight)
 	c.Assert(err, qt.IsNil)
@@ -167,31 +156,25 @@ func Test_genInputs(t *testing.T) {
 
 	// Compute the VoteHash
 	voteValue := big.NewInt(1)
-	voteValueHash := sha256.Sum256(voteValue.Bytes())
-	strVoteHash := []string{
-		new(big.Int).SetBytes(arbo.SwapEndianness(voteValueHash[:16])).String(),
-		new(big.Int).SetBytes(arbo.SwapEndianness(voteValueHash[16:])).String(),
-	}
+	strVoteHash := BytesToArboStr(voteValue.Bytes())
 
 	// Define the ProcessId
-	processIdValue := sha256.Sum256(big.NewInt(10).Bytes())
-	processId := []*big.Int{
+	electionId, _ := hex.DecodeString("c5d2460186f77673dcc1cac53a626a10e28f4de7a70a1ac6961a020200000000")
+	strProcessId := BytesToArboStr(electionId)
+
+	processIdValue := sha256.Sum256(electionId)
+	intProcessId := []*big.Int{
 		new(big.Int).SetBytes(arbo.SwapEndianness(processIdValue[:16])),
 		new(big.Int).SetBytes(arbo.SwapEndianness(processIdValue[16:])),
-	}
-	strProcessId := []string{
-		processId[0].String(),
-		processId[1].String(),
 	}
 
 	// Compute the Nullifier privKey + processId
 	nullifier, err := poseidon.Hash([]*big.Int{
 		babyjub.SkToBigInt(&privateKey),
-		processId[0],
-		processId[1],
+		intProcessId[0],
+		intProcessId[1],
 	})
 	c.Assert(err, qt.IsNil)
-	strNullifier := nullifier.String()
 
 	// Write the result using string templating to keep the key order
 	result := map[string]any{
@@ -201,8 +184,7 @@ func Test_genInputs(t *testing.T) {
 		"privateKey":     strPrivKey,
 		"voteHash":       strVoteHash,
 		"processId":      strProcessId,
-		"nullifier":      strNullifier,
-		"shifted":        fmt.Sprint(timesShifted),
+		"nullifier":      nullifier.String(),
 	}
 
 	jsonResult, err := json.Marshal(result)

@@ -33,11 +33,27 @@ include "node_modules/circomlib/circuits/poseidon.circom";
 include "node_modules/circomlib/circuits/comparators.circom";
 include "node_modules/circomlib/circuits/smt/smtverifier.circom";
 
-function truncate(in, n) {
-    var pos = 10**n;
-    var partial = in - (in % pos);
-    var res = partial / pos;
-    return res;
+// ZkAddress reduces the provided poseidon hash of a babyJubJub publicKey 
+// to the default size of the Vochain Address (20 bytes), getting its first 
+// 8*bytes bits.
+template ZkAddress() {
+    signal input keyHash;
+    signal output address;
+    // Get the binary representation of the input
+    component n2b = Num2Bits_strict();
+    n2b.in <== keyHash; 
+	// Define the number of bits that fit into the default Vochain Address size
+	var vochainAddrBits = 160; // (20 bytes * 8 bits/byte)
+	// Get the binary representation of the hash of the public key that 
+	// completes the address size
+    var addrBits[vochainAddrBits];
+    for (var i=0; i<vochainAddrBits; i++) {
+        addrBits[i] = n2b.out[i];
+    }
+    // Return the binary address to its decimal representation
+    component b2n = Bits2Num(vochainAddrBits);
+    b2n.in <== addrBits;
+    b2n.out ==> address;
 }
 
 template Census(nLevels) {
@@ -57,7 +73,6 @@ template Census(nLevels) {
 	// private signals
 	signal input censusSiblings[realNLevels];
 	signal input privateKey;
-	signal input shifted;
 
 	// compute publicKey
 	component babyPbk = BabyPbk();
@@ -68,8 +83,8 @@ template Census(nLevels) {
 	keyHash.inputs[0] <== babyPbk.Ax;
 	keyHash.inputs[1] <== babyPbk.Ay;
 
-	var pubKey = keyHash.out;
-	var tPubKey = truncate(pubKey, shifted);
+	component vochainAddr = ZkAddress();
+    vochainAddr.keyHash <== keyHash.out;
 
 	// check the Merkletree with CensusRoot, siblings, keyHash and weight
 	component smtClaimExists = SMTVerifier(realNLevels);
@@ -82,7 +97,7 @@ template Census(nLevels) {
 	smtClaimExists.oldKey <== 0;
 	smtClaimExists.oldValue <== 0;
 	smtClaimExists.isOld0 <== 0;
-	smtClaimExists.key <-- tPubKey;
+	smtClaimExists.key <-- vochainAddr.address;
 	smtClaimExists.value <== weight;
 
 	// check nullifier (electionID + privateKey)
