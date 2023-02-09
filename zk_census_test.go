@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -17,24 +16,6 @@ import (
 	"go.vocdoni.io/dvote/db/pebbledb"
 	"go.vocdoni.io/dvote/tree/arbo"
 )
-
-// LittleEndianToNBytes truncate the most significant n bytes of the provided
-// little endian number provided and returns into a new big.Int.
-func LittleEndianToNBytes(num *big.Int, n int) *big.Int {
-	// To take the n most significant bytes of a little endian number its needed
-	// to discard the first m bytes, where m = len(numBytes) - n
-	numBytes := num.Bytes()
-	m := len(numBytes) - n
-	return new(big.Int).SetBytes(numBytes[m:])
-}
-
-func BytesToArboStr(input []byte) []string {
-	hash := sha256.Sum256(input)
-	return []string{
-		new(big.Int).SetBytes(arbo.SwapEndianness(hash[:16])).String(),
-		new(big.Int).SetBytes(arbo.SwapEndianness(hash[16:])).String(),
-	}
-}
 
 func getEnvVars(t *testing.T) (string, string, int, int, int) {
 	circuitName, environment, nLevels, keySize, nPaddingLeafs := "zkCensus", "dev", 160, 20, 100
