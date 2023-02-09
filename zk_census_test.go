@@ -11,11 +11,10 @@ import (
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"github.com/iden3/go-iden3-crypto/babyjub"
-	"github.com/iden3/go-iden3-crypto/poseidon"
+	"go.vocdoni.io/dvote/crypto/zk"
 	"go.vocdoni.io/dvote/crypto/zk/prover"
 	"go.vocdoni.io/dvote/db"
-	"go.vocdoni.io/dvote/db/badgerdb"
+	"go.vocdoni.io/dvote/db/pebbledb"
 	"go.vocdoni.io/dvote/tree/arbo"
 )
 
@@ -89,14 +88,13 @@ func Test_genInputs(t *testing.T) {
 		"nPaddingLeafs": nPaddingLeafs,
 	})
 
-	// Generate babyjubjub keys
-	needlePrivateKey := "6430ab787ad5130942369901498a118fade013ebab5450efbfb6acac66d8fb88"
-	privateKey := babyjub.PrivateKey{}
-	_, err := hex.Decode(privateKey[:], []byte(needlePrivateKey))
+	// Generate the ZkAddress
+	needlePrivateKey := "37c4e1c61da8de4d9d608e6eee41e08319a0cadd6173fc7d17e5b9e016c55231"
+	zkAddr, err := zk.AddressFromString(needlePrivateKey)
 	c.Assert(err, qt.IsNil)
 
 	// Create a census tree
-	database, err := badgerdb.New(db.Options{Path: c.TempDir()})
+	database, err := pebbledb.New(db.Options{Path: c.TempDir()})
 	c.Assert(err, qt.IsNil)
 	censusTree, err := arbo.NewTree(arbo.Config{
 		Database:     database,
@@ -106,21 +104,9 @@ func Test_genInputs(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// Define a weight and add it with the public key to the census
-	weight := new(big.Int).SetInt64(1)
-	pubKey, err := poseidon.Hash([]*big.Int{
-		privateKey.Public().X,
-		privateKey.Public().Y,
-	})
+	weight := new(big.Int).SetInt64(10)
+	err = censusTree.Add(zkAddr.Bytes(), weight.Bytes())
 	c.Assert(err, qt.IsNil)
-
-	addr := LittleEndianToNBytes(pubKey, keySize)
-	bWeight := arbo.BigIntToBytes(keySize, weight)
-	bPubKey := arbo.BigIntToBytes(keySize, addr)
-
-	err = censusTree.Add(bPubKey, bWeight)
-	c.Assert(err, qt.IsNil)
-	strWeight := weight.String()
-	strPrivKey := babyjub.SkToBigInt(&privateKey).String()
 
 	// Add extra voters to the census
 	for i := 0; i < nPaddingLeafs; i++ {
@@ -132,9 +118,9 @@ func Test_genInputs(t *testing.T) {
 	}
 
 	// Get the CensusProof => {key, value, siblings}
-	leafKey, leafValue, packedSiblings, exists, err := censusTree.GenProof(bPubKey)
-	c.Assert(leafKey, qt.DeepEquals, bPubKey)
-	c.Assert(leafValue, qt.DeepEquals, bWeight)
+	leafKey, leafValue, packedSiblings, exists, err := censusTree.GenProof(zkAddr.Bytes())
+	c.Assert(leafKey, qt.ContentEquals, []byte(zkAddr.Bytes()))
+	c.Assert(leafValue, qt.DeepEquals, weight.Bytes())
 	c.Assert(exists, qt.IsTrue)
 	c.Assert(err, qt.IsNil)
 
@@ -156,34 +142,24 @@ func Test_genInputs(t *testing.T) {
 
 	// Compute the VoteHash
 	voteValue := big.NewInt(1)
-	strVoteHash := BytesToArboStr(voteValue.Bytes())
+	voteHash := zk.BytesToArboStr(voteValue.Bytes())
 
 	// Define the ProcessId
-	electionId, _ := hex.DecodeString("c5d2460186f77673dcc1cac53a626a10e28f4de7a70a1ac6961a020200000000")
-	strProcessId := BytesToArboStr(electionId)
-
-	processIdValue := sha256.Sum256(electionId)
-	intProcessId := []*big.Int{
-		new(big.Int).SetBytes(arbo.SwapEndianness(processIdValue[:16])),
-		new(big.Int).SetBytes(arbo.SwapEndianness(processIdValue[16:])),
-	}
+	electionId, _ := hex.DecodeString("c5d2460186f760d51371516148fd334b4199052f01538553aa9a020200000000")
+	processId := zk.BytesToArboStr(electionId)
 
 	// Compute the Nullifier privKey + processId
-	nullifier, err := poseidon.Hash([]*big.Int{
-		babyjub.SkToBigInt(&privateKey),
-		intProcessId[0],
-		intProcessId[1],
-	})
+	nullifier, err := zkAddr.Nullifier(electionId)
 	c.Assert(err, qt.IsNil)
 
 	// Write the result using string templating to keep the key order
 	result := map[string]any{
+		"processId":      processId,
 		"censusRoot":     strCensusRoot,
 		"censusSiblings": strSiblings,
-		"weight":         strWeight,
-		"privateKey":     strPrivKey,
-		"voteHash":       strVoteHash,
-		"processId":      strProcessId,
+		"voteHash":       voteHash,
+		"weight":         weight.String(),
+		"privateKey":     zkAddr.PrivKey.String(),
 		"nullifier":      nullifier.String(),
 	}
 
