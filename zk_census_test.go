@@ -70,7 +70,7 @@ func Test_genInputs(t *testing.T) {
 	})
 
 	// Generate the ZkAddress
-	needlePrivateKey := "37c4e1c61da8de4d9d608e6eee41e08319a0cadd6173fc7d17e5b9e016c55231"
+	needlePrivateKey := "6430ab787ad5130942369901498a118fade013ebab5450efbfb6acac66d8fb88"
 	zkAddr, err := zk.AddressFromString(needlePrivateKey)
 	c.Assert(err, qt.IsNil)
 
@@ -122,8 +122,7 @@ func Test_genInputs(t *testing.T) {
 	strCensusRoot := arbo.BytesToBigInt(censusRoot).String()
 
 	// Compute the VoteHash
-	voteValue := big.NewInt(1)
-	voteHash := zk.BytesToArboStr(voteValue.Bytes())
+	voteHash := zk.BytesToArboStr(weight.Bytes())
 
 	// Define the ProcessId
 	electionId, _ := hex.DecodeString("c5d2460186f760d51371516148fd334b4199052f01538553aa9a020200000000")
