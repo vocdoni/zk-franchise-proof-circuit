@@ -85,23 +85,24 @@ func Test_genInputs(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// Define a weight and add it with the public key to the census
-	weight := new(big.Int).SetInt64(10)
-	err = censusTree.Add(zkAddr.Bytes(), weight.Bytes())
+	votingWeight := new(big.Int).SetInt64(20)
+	factoryWeight := new(big.Int).SetInt64(255)
+	err = censusTree.Add(zkAddr.Bytes(), factoryWeight.Bytes())
 	c.Assert(err, qt.IsNil)
 
 	// Add extra voters to the census
 	for i := 0; i < nPaddingLeafs; i++ {
-		weight := arbo.BigIntToBytes(keySize, big.NewInt(int64(i+1)))
-		mockPublicKey := arbo.BigIntToBytes(keySize, big.NewInt(int64(i)))
+		mockZkAddr, err := zk.NewRandAddress()
+		c.Assert(err, qt.IsNil)
 
-		err = censusTree.Add(mockPublicKey, weight)
+		err = censusTree.Add(mockZkAddr.Bytes(), factoryWeight.Bytes())
 		c.Assert(err, qt.IsNil)
 	}
 
 	// Get the CensusProof => {key, value, siblings}
 	leafKey, leafValue, packedSiblings, exists, err := censusTree.GenProof(zkAddr.Bytes())
 	c.Assert(leafKey, qt.ContentEquals, []byte(zkAddr.Bytes()))
-	c.Assert(leafValue, qt.DeepEquals, weight.Bytes())
+	c.Assert(leafValue, qt.DeepEquals, factoryWeight.Bytes())
 	c.Assert(exists, qt.IsTrue)
 	c.Assert(err, qt.IsNil)
 
@@ -122,7 +123,7 @@ func Test_genInputs(t *testing.T) {
 	strCensusRoot := arbo.BytesToBigInt(censusRoot).String()
 
 	// Compute the VoteHash
-	voteHash := zk.BytesToArboStr(weight.Bytes())
+	voteHash := zk.BytesToArboStr(factoryWeight.Bytes())
 
 	// Define the ProcessId
 	electionId, _ := hex.DecodeString("c5d2460186f760d51371516148fd334b4199052f01538553aa9a020200000000")
@@ -138,7 +139,8 @@ func Test_genInputs(t *testing.T) {
 		"censusRoot":     strCensusRoot,
 		"censusSiblings": strSiblings,
 		"voteHash":       voteHash,
-		"weight":         weight.String(),
+		"votingWeight":   votingWeight.String(),
+		"factoryWeight":  factoryWeight.String(),
 		"privateKey":     zkAddr.PrivKey.String(),
 		"nullifier":      nullifier.String(),
 	}

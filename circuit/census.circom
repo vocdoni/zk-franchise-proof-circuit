@@ -64,15 +64,24 @@ template Census(nLevels) {
 
 	// defined by the user
 	signal input nullifier; // public
-	signal input weight; // public
+	// votingWeight represents the weight that the user wants to use to perform 
+	// a vote and must be lower than factoryWeight
+	signal input votingWeight; // public
 	// voteHash is not operated inside the circuit, assuming that in
 	// Circom an input that is not used will be included in the constraints
 	// system and in the witness
 	signal input voteHash[2]; // public
 
 	// private signals
+	signal input factoryWeight;
 	signal input censusSiblings[realNLevels];
 	signal input privateKey;
+
+	// check that votingWeight is equal or lower than factoryWeight
+	component checkWeight = LessEqThan(252);
+    checkWeight.in[0] <== votingWeight;
+    checkWeight.in[1] <== factoryWeight;
+	checkWeight.out === 1;
 
 	// compute publicKey
 	component babyPbk = BabyPbk();
@@ -97,8 +106,8 @@ template Census(nLevels) {
 	smtClaimExists.oldKey <== 0;
 	smtClaimExists.oldValue <== 0;
 	smtClaimExists.isOld0 <== 0;
-	smtClaimExists.key <-- vochainAddr.address;
-	smtClaimExists.value <== weight;
+	smtClaimExists.key <== vochainAddr.address;
+	smtClaimExists.value <== factoryWeight;
 
 	// check nullifier (electionID + privateKey)
 	component computedNullifier = Poseidon(3);
