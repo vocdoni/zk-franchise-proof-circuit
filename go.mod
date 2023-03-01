@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/frankban/quicktest v1.14.4
-	go.vocdoni.io/dvote v1.0.4-0.20230227101245-90456803e843
+	go.vocdoni.io/dvote v1.0.4-0.20230227182020-0b698da8b49e
 )
 
 require (
