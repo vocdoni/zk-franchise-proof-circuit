@@ -11,6 +11,7 @@ import (
 
 	qt "github.com/frankban/quicktest"
 	"go.vocdoni.io/dvote/crypto/zk"
+	"go.vocdoni.io/dvote/crypto/zk/circuit"
 	"go.vocdoni.io/dvote/crypto/zk/prover"
 	"go.vocdoni.io/dvote/db"
 	"go.vocdoni.io/dvote/db/pebbledb"
@@ -85,8 +86,8 @@ func Test_genInputs(t *testing.T) {
 	c.Assert(err, qt.IsNil)
 
 	// Define a weight and add it with the public key to the census
-	votingWeight := new(big.Int).SetInt64(2551)
-	factoryWeight := new(big.Int).SetInt64(2551)
+	votingWeight := new(big.Int).SetInt64(10)
+	factoryWeight := new(big.Int).SetInt64(20)
 	encFactoryWeight := arbo.BigIntToBytes(arbo.HashFunctionPoseidon.Len(), factoryWeight)
 	err = censusTree.Add(zkAddr.Bytes(), encFactoryWeight)
 	c.Assert(err, qt.IsNil)
@@ -119,38 +120,17 @@ func Test_genInputs(t *testing.T) {
 	}
 
 	// Get the CensusRoot
+	electionId, _ := hex.DecodeString("c5d2460186f760d51371516148fd334b4199052f01538553aa9a020200000000")
 	censusRoot, err := censusTree.Root()
 	c.Assert(err, qt.IsNil)
-	strCensusRoot := arbo.BytesToBigInt(censusRoot).String()
 
-	// Compute the VoteHash
-	voteHash := zk.BytesToArboStr(factoryWeight.Bytes())
-
-	// Define the ProcessId
-	electionId, _ := hex.DecodeString("c5d2460186f760d51371516148fd334b4199052f01538553aa9a020200000000")
-	processId := zk.BytesToArboStr(electionId)
-
-	// Compute the Nullifier privKey + processId
-	nullifier, err := zkAddr.Nullifier(electionId)
+	rawInputs, err := circuit.GenerateCircuitInput(zkAddr, censusRoot, electionId, factoryWeight, votingWeight, strSiblings)
 	c.Assert(err, qt.IsNil)
-
-	// Write the result using string templating to keep the key order
-	result := map[string]any{
-		"processId":      processId,
-		"censusRoot":     strCensusRoot,
-		"censusSiblings": strSiblings,
-		"voteHash":       voteHash,
-		"votingWeight":   votingWeight.String(),
-		"factoryWeight":  factoryWeight.String(),
-		"privateKey":     zkAddr.PrivKey.String(),
-		"nullifier":      nullifier.String(),
-	}
-
-	jsonResult, err := json.Marshal(result)
+	jsonInputs, err := json.Marshal(rawInputs)
 	c.Assert(err, qt.IsNil)
 
 	output := fmt.Sprintf("./artifacts/%s/%s/%d/inputs_example.json", name, env, nLevels)
-	err = os.WriteFile(output, jsonResult, 0644)
+	err = os.WriteFile(output, jsonInputs, 0644)
 	c.Assert(err, qt.IsNil)
 }
 
