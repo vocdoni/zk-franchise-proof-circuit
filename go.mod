@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/frankban/quicktest v1.14.4
-	go.vocdoni.io/dvote v1.0.4-0.20230227182020-0b698da8b49e
+	go.vocdoni.io/dvote v1.0.4-0.20230307085219-8a6c8d64d8e9
 )
 
 require (
@@ -33,6 +33,8 @@ require (
 	github.com/klauspost/compress v1.15.15 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.13.1 // indirect
@@ -40,8 +42,9 @@ require (
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
+	github.com/rs/zerolog v1.28.0 // indirect
 	github.com/wasmerio/wasmer-go v1.0.4 // indirect
-	go.vocdoni.io/proto v1.14.1-0.20230124095055-c3e02490cdfe // indirect
+	go.vocdoni.io/proto v1.14.1-0.20230303133214-7f1eadfe6264 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/exp v0.0.0-20230125214544-b3c2aaf6208d // indirect
 	golang.org/x/sys v0.4.0 // indirect

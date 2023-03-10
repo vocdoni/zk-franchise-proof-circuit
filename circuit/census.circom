@@ -6,13 +6,21 @@ Circuit to check:
 - keyHash (hash of the user's public key) belongs to the census
 		- the public key is generated based on the provided private key
 		- the public key is inside a hash, which is inside the Merkletree with 
-		the CensusRoot and siblings (key=keyHash, value=weight)
+		the CensusRoot and siblings (key=keyHash, value=factoryWeight)
 - H(private key, processID) == nullifier
 	- to avoid proof reusability
+- factoryWeight is the weight assigned by default to the owner of the private key and 
+  included as merkle tree leaf value.
+- votingWeight is the weight desired to vote by the owner of the private key and must
+  be less than or equal to the factoryWeight
 
-			    	+----------+
-				|          |
-	PUB_censusRoot+-------->+          |(value)<-----+PUB_weight
+				+----+
+	PUB_votingWeight+------>+ <= +-------------------+--PRI_factoryWeight
+				+----+			 |
+							 |
+			    	+----------+		 |
+				|          |		 |
+	PUB_censusRoot+-------->+          |(value)<-----+
 				|          |
 				| SMT      |         +----------+    +------------+
 				| Verifier |         |          |    |            |
@@ -25,7 +33,7 @@ Circuit to check:
 	PUB_nullifier+--------->+ == +<---------+ Poseidon |<------------+PUB_processID_0
 				+----+		|          +<------------+PUB_processID_1
 						+----------+
-	PUB_voteHash†
+	PUB_voteHash
 */
 
 include "node_modules/circomlib/circuits/babyjub.circom";
@@ -37,23 +45,23 @@ include "node_modules/circomlib/circuits/smt/smtverifier.circom";
 // to the default size of the Vochain Address (20 bytes), getting its first 
 // 8*bytes bits.
 template ZkAddress() {
-    signal input keyHash;
-    signal output address;
-    // Get the binary representation of the input
-    component n2b = Num2Bits_strict();
-    n2b.in <== keyHash; 
+    	signal input keyHash;
+    	signal output address;
+    	// Get the binary representation of the input
+    	component n2b = Num2Bits_strict();
+    	n2b.in <== keyHash; 
 	// Define the number of bits that fit into the default Vochain Address size
 	var vochainAddrBits = 160; // (20 bytes * 8 bits/byte)
 	// Get the binary representation of the hash of the public key that 
 	// completes the address size
-    var addrBits[vochainAddrBits];
-    for (var i=0; i<vochainAddrBits; i++) {
-        addrBits[i] = n2b.out[i];
-    }
-    // Return the binary address to its decimal representation
-    component b2n = Bits2Num(vochainAddrBits);
-    b2n.in <== addrBits;
-    b2n.out ==> address;
+    	var addrBits[vochainAddrBits];
+    	for (var i=0; i<vochainAddrBits; i++) {
+    	    addrBits[i] = n2b.out[i];
+    	}
+    	// Return the binary address to its decimal representation
+    	component b2n = Bits2Num(vochainAddrBits);
+    	b2n.in <== addrBits;
+    	b2n.out ==> address;
 }
 
 template Census(nLevels) {
@@ -64,15 +72,24 @@ template Census(nLevels) {
 
 	// defined by the user
 	signal input nullifier; // public
-	signal input weight; // public
+	// votingWeight represents the weight that the user wants to use to perform 
+	// a vote and must be lower than factoryWeight
+	signal input votingWeight; // public
 	// voteHash is not operated inside the circuit, assuming that in
 	// Circom an input that is not used will be included in the constraints
 	// system and in the witness
 	signal input voteHash[2]; // public
 
 	// private signals
+	signal input factoryWeight;
 	signal input censusSiblings[realNLevels];
 	signal input privateKey;
+
+	// check that votingWeight is less than or equal to factoryWeight
+	component checkWeight = LessEqThan(252);
+        checkWeight.in[0] <== votingWeight;
+        checkWeight.in[1] <== factoryWeight;
+	checkWeight.out === 1;
 
 	// compute publicKey
 	component babyPbk = BabyPbk();
@@ -84,7 +101,7 @@ template Census(nLevels) {
 	keyHash.inputs[1] <== babyPbk.Ay;
 
 	component vochainAddr = ZkAddress();
-    vochainAddr.keyHash <== keyHash.out;
+        vochainAddr.keyHash <== keyHash.out;
 
 	// check the Merkletree with CensusRoot, siblings, keyHash and weight
 	component smtClaimExists = SMTVerifier(realNLevels);
@@ -97,8 +114,8 @@ template Census(nLevels) {
 	smtClaimExists.oldKey <== 0;
 	smtClaimExists.oldValue <== 0;
 	smtClaimExists.isOld0 <== 0;
-	smtClaimExists.key <-- vochainAddr.address;
-	smtClaimExists.value <== weight;
+	smtClaimExists.key <== vochainAddr.address;
+	smtClaimExists.value <== factoryWeight;
 
 	// check nullifier (electionID + privateKey)
 	component computedNullifier = Poseidon(3);

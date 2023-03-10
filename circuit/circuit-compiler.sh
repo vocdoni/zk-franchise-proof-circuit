@@ -84,7 +84,7 @@ compile_circuit() {
 
 	CIRCUITCODE="pragma circom 2.0.0;
 include \"$CIRCUIT\";
-component main {public [processId, censusRoot, nullifier, voteHash, weight]} = Census($NLEVELS);"
+component main {public [processId, censusRoot, nullifier, voteHash, votingWeight]} = Census($NLEVELS);"
 	echo "$CIRCUITCODE" > $TRASH/circuit.circom
 
 	# compilling the circuit
