@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"log"
 	"math/big"
 	"testing"
@@ -23,6 +22,7 @@ var nLevels = flag.Int("nLevels", 160, "number of levels of the arbo tree")
 var nKeys = flag.Int("nKyes", 10, "number of keys to add to the arbo tree")
 
 func successInputs(nLevels, nKeys int) (ZkFranchiseProofCircuit, error) {
+	// test with dummy personal signature generated with metamask.github.io/test-dapp
 	msg := []byte("Example `personal_sign` message")
 	password := util.RandomBytes(32)
 	factoryWeight := big.NewInt(10)
@@ -30,12 +30,12 @@ func successInputs(nLevels, nKeys int) (ZkFranchiseProofCircuit, error) {
 	if err != nil {
 		return ZkFranchiseProofCircuit{}, err
 	}
-
+	// get address from the signature
 	address, err := ethereum.AddrFromSignature(msg, signature)
 	if err != nil {
 		return ZkFranchiseProofCircuit{}, err
 	}
-
+	// generate tree for the census
 	censusRoot, nCensusSiblings, censusSiblings, err := GenTree("census", address.Bytes(), factoryWeight.Bytes(), 10)
 	if err != nil {
 		log.Fatal("0 - ", err)
@@ -45,40 +45,35 @@ func successInputs(nLevels, nKeys int) (ZkFranchiseProofCircuit, error) {
 	for i, s := range censusSiblings {
 		vcensusSiblings[i] = s
 	}
-
+	// ensure that the password and signature are in the FF
 	ffPassword := BytesToFF(password)
 	ffSignature := BytesToFF(signature)
-
+	// calculate the cik => H(address, password, signature)
 	cik, err := poseidon.Hash([]*big.Int{
 		arbo.BytesToBigInt(address.Bytes()),
-		// arbo.BytesToBigInt(password),
-		// arbo.BytesToBigInt(signature),
 		ffPassword,
 		ffSignature,
 	})
 	if err != nil {
-		log.Fatal("3 - ", err)
 		return ZkFranchiseProofCircuit{}, err
 	}
-
+	// generate tree for the cik's
 	cikRoot, nCIKSiblings, cikSiblings, err := GenTree("cik", address.Bytes(), arbo.BigIntToBytes(arbo.HashFunctionPoseidon.Len(), cik), 10)
 	if err != nil {
-		log.Fatal("4 - ", err)
 		return ZkFranchiseProofCircuit{}, err
 	}
-
 	vcikSiblings := [160]frontend.Variable{}
 	for i, s := range cikSiblings {
 		vcikSiblings[i] = s
 	}
-
+	// generate the electionId and calculate nullifier =>
+	// H(signature, password, electionId)
 	electionId := BytesToArbo(util.RandomBytes(32))
 	nullifier, err := poseidon.Hash([]*big.Int{ffSignature, ffPassword, electionId[0], electionId[1]})
 	if err != nil {
-		log.Fatal("5 - ", err)
 		return ZkFranchiseProofCircuit{}, err
 	}
-
+	// generate vote hash and encode inputs
 	voteHash := BytesToArbo(factoryWeight.Bytes())
 	return ZkFranchiseProofCircuit{
 		ElectionId:    [2]frontend.Variable{electionId[0], electionId[1]},
@@ -110,7 +105,6 @@ func TestZkCensusCircuit(t *testing.T) {
 	var circuit ZkFranchiseProofCircuit
 
 	inputs, err := successInputs(*nLevels, *nKeys)
-	fmt.Println(inputs.String())
 	assert.Nil(err)
 	assert.SolvingSucceeded(&circuit, &inputs, test.WithCurves(ecc.BN254), test.WithBackends(backend.PLONK))
 	assert.SolvingSucceeded(&circuit, &inputs, test.WithCurves(ecc.BN254), test.WithBackends(backend.GROTH16))

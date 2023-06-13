@@ -1,6 +1,6 @@
 module github.com/vocdoni/zk-franchise-proof-circuit
 
-replace github.com/vocdoni/gnark-crypto-primitives => ../vocdoni-crypto-primitives
+// replace github.com/vocdoni/gnark-crypto-primitives => ../vocdoni-crypto-primitives
 
 go 1.20
 
@@ -8,7 +8,7 @@ require (
 	github.com/consensys/gnark v0.8.0
 	github.com/consensys/gnark-crypto v0.9.1
 	github.com/iden3/go-iden3-crypto v0.0.15
-	github.com/vocdoni/gnark-crypto-primitives v0.0.0-20230609075429-14aecbe65b6c
+	github.com/vocdoni/gnark-crypto-primitives v0.0.1
 	go.vocdoni.io/dvote v1.7.0
 )
 
