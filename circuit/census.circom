@@ -1,129 +1,117 @@
-pragma circom 2.1.0;
+pragma circom 2.1.2;
 
-/*
-Circuit to check:
-- the prover is the owner of the private key
-- keyHash (hash of the user's public key) belongs to the census
-		- the public key is generated based on the provided private key
-		- the public key is inside a hash, which is inside the Merkletree with 
-		the CensusRoot and siblings (key=keyHash, value=factoryWeight)
-- H(private key, processID) == nullifier
-	- to avoid proof reusability
-- factoryWeight is the weight assigned by default to the owner of the private key and 
-  included as merkle tree leaf value.
-- votingWeight is the weight desired to vote by the owner of the private key and must
-  be less than or equal to the factoryWeight
-
-				+----+
-	PUB_votingWeight+------>+ <= +-------------------+--PRI_factoryWeight
-				+----+			 |
-							 |
-			    	+----------+		 |
-				|          |		 |
-	PUB_censusRoot+-------->+          |(value)<-----+
-				|          |
-				| SMT      |         +----------+    +------------+
-				| Verifier |         |          |    |            |
-	PRI_siblings+---------->+          |(key)<---+ Poseidon +<---+ publickKey +-+---+PRI_privateKey
-				|          |         |          |    |            | |
-				+----------+         +----------+    +------------+ |
-	       									    |
-						+----------+			    |
-				+----+		|          +<-----------------------+
-	PUB_nullifier+--------->+ == +<---------+ Poseidon |<------------+PUB_processID_0
-				+----+		|          +<------------+PUB_processID_1
-						+----------+
-	PUB_voteHash
-*/
-
-include "node_modules/circomlib/circuits/babyjub.circom";
 include "node_modules/circomlib/circuits/poseidon.circom";
 include "node_modules/circomlib/circuits/comparators.circom";
 include "node_modules/circomlib/circuits/smt/smtverifier.circom";
 
-// ZkAddress reduces the provided poseidon hash of a babyJubJub publicKey 
-// to the default size of the Vochain Address (20 bytes), getting its first 
-// 8*bytes bits.
-template ZkAddress() {
-    	signal input keyHash;
-    	signal output address;
-    	// Get the binary representation of the input
-    	component n2b = Num2Bits_strict();
-    	n2b.in <== keyHash; 
-	// Define the number of bits that fit into the default Vochain Address size
-	var vochainAddrBits = 160; // (20 bytes * 8 bits/byte)
-	// Get the binary representation of the hash of the public key that 
-	// completes the address size
-    	var addrBits[vochainAddrBits];
-    	for (var i=0; i<vochainAddrBits; i++) {
-    	    addrBits[i] = n2b.out[i];
-    	}
-    	// Return the binary address to its decimal representation
-    	component b2n = Bits2Num(vochainAddrBits);
-    	b2n.in <== addrBits;
-    	b2n.out ==> address;
-}
+/**
+                                                   ┌───────────┐
+                              ┌────────────────────▶lessOrEqual├──────────┐
+      (priv) voteWeight───────┘                    └─────▲─────┘          │
+                                                         │                │
+  (pub) availableWeight─┬────────────────────────────────┘                │
+                        │                                                 │    ┌────┐
+                        │                                                 └───▶│    └┐
+                        │       ┌────────────────────┐                 ┌──────▶│     └┐
+                        │  ┌────▶key                 │                 │       │      ├─
+                        └──│────▶value               │                 │   ┌──▶│     ┌┘
+                           │    │         SMTVerifier├─────────────────┘ ┌────▶│    ┌┘
+       (pub) censusRoot────│────▶root                │                   │ │   └────┘
+                        ┌──│────▶siblings            │                   │ │
+  (priv) censusSiblings─┘  │    └────────────────────┘                   │ │
+                           │                     ┌────────────────────┐  │ │
+                           │   ┌─────────────────▶key                 │  │ │
+                           │   │               ┌─▶value               │  │ │
+                           │   │               │ │         SMTVerifier├──│─┘
+          (pub) cikRoot────│─────────────────────▶root                │  │
+                           │   ┌─────────────────▶siblings            │  │
+     (priv) cikSiblings────│───┘               │ └────────────────────┘  │
+                           │   │               │                         │
+                           │   │               │                         │
+                           │   │               │                         │
+         (priv) address────┼───┘ ┌────────────┐│                         │
+                           ├────▶│            ││                         │
+        (priv) password────│────▶│    Hash    ├┘                         │
+                        ┌──│────▶│            │                          │
+       (priv) signature─┤  │     └────────────┘                          │
+                        │  │                                             │
+                        │  │     ┌────────────┐                          │
+                        │  └────▶│            │                          │
+                        └───────▶│    Hash    ├──────────┐               │
+                           ┌────▶│            │          │               │
+                           │     └────────────┘          │               │
+       (pub) electionId────┘                             │               │
+                                                   ┌─────▼─────┐         │
+        (pub) nullifier────────────────────────────▶   equal   ├─────────┘
+                                                   └───────────┘                        
+*/
 
-template Census(nLevels) {
-	var realNLevels = nLevels+1;
-	// defined by the process
-	signal input processId[2]; // public
-	signal input censusRoot; // public
-
-	// defined by the user
-	signal input nullifier; // public
-	// votingWeight represents the weight that the user wants to use to perform 
-	// a vote and must be lower than factoryWeight
-	signal input votingWeight; // public
-	// voteHash is not operated inside the circuit, assuming that in
+template ZkFranchiseProofCircuit (nLevels) {
+    var realNLevels = nLevels+1;
+    signal input electionId[2];
+    signal input nullifier;
+    signal input availableWeight;
+    // voteHash is not operated inside the circuit, assuming that in
 	// Circom an input that is not used will be included in the constraints
 	// system and in the witness
-	signal input voteHash[2]; // public
+    signal input voteHash[2];
+    signal input cikRoot;
+    signal input censusRoot;
 
-	// private signals
-	signal input factoryWeight;
-	signal input censusSiblings[realNLevels];
-	signal input privateKey;
+    signal input address;
+    signal input password;
+    signal input signature;
 
-	// check that votingWeight is less than or equal to factoryWeight
-	component checkWeight = LessEqThan(252);
-        checkWeight.in[0] <== votingWeight;
-        checkWeight.in[1] <== factoryWeight;
-	checkWeight.out === 1;
+    signal input voteWeight;
+    signal input censusSiblings[realNLevels];
+    signal input cikSiblings[realNLevels];
+    
+    component checkWeight = LessEqThan(252);
+    checkWeight.in[0] <== voteWeight;
+    checkWeight.in[1] <== availableWeight;
+    checkWeight.out === 1;
+    
+    component cik = Poseidon(3);
+	cik.inputs[0] <== address;
+	cik.inputs[1] <== password;
+    cik.inputs[2] <== signature;
 
-	// compute publicKey
-	component babyPbk = BabyPbk();
-	babyPbk.in <== privateKey;
-
-	// compute keyHash, which will be at the leaf
-	component keyHash = Poseidon(2);
-	keyHash.inputs[0] <== babyPbk.Ax;
-	keyHash.inputs[1] <== babyPbk.Ay;
-
-	component vochainAddr = ZkAddress();
-        vochainAddr.keyHash <== keyHash.out;
-
-	// check the Merkletree with CensusRoot, siblings, keyHash and weight
-	component smtClaimExists = SMTVerifier(realNLevels);
-	smtClaimExists.enabled <== 1;
-	smtClaimExists.fnc <== 0; // 0 as is to verify inclusion
-	smtClaimExists.root <== censusRoot;
+    component cikVerifier = SMTVerifier(realNLevels);
+	cikVerifier.enabled <== 1;
+	cikVerifier.fnc <== 0; // 0 as is to verify inclusion
+	cikVerifier.root <== cikRoot;
 	for (var i=0; i<realNLevels; i++) {
-		smtClaimExists.siblings[i] <== censusSiblings[i];
+		cikVerifier.siblings[i] <== cikSiblings[i];
 	}
-	smtClaimExists.oldKey <== 0;
-	smtClaimExists.oldValue <== 0;
-	smtClaimExists.isOld0 <== 0;
-	smtClaimExists.key <== vochainAddr.address;
-	smtClaimExists.value <== factoryWeight;
+	cikVerifier.oldKey <== 0;
+	cikVerifier.oldValue <== 0;
+	cikVerifier.isOld0 <== 0;
+	cikVerifier.key <== address;
+	cikVerifier.value <== cik.out;
 
-	// check nullifier (electionID + privateKey)
-	component computedNullifier = Poseidon(3);
-	computedNullifier.inputs[0] <== privateKey;
-	computedNullifier.inputs[1] <== processId[0];
-	computedNullifier.inputs[2] <== processId[1];
-	component checkNullifier = ForceEqualIfEnabled();
+    component censusVerifier = SMTVerifier(realNLevels);
+	censusVerifier.enabled <== 1;
+	censusVerifier.fnc <== 0; // 0 as is to verify inclusion
+	censusVerifier.root <== censusRoot;
+	for (var i=0; i<realNLevels; i++) {
+		censusVerifier.siblings[i] <== censusSiblings[i];
+	}
+	censusVerifier.oldKey <== 0;
+	censusVerifier.oldValue <== 0;
+	censusVerifier.isOld0 <== 0;
+	censusVerifier.key <== address;
+	censusVerifier.value <== availableWeight;
+
+    component computedNullifier = Poseidon(4);
+	computedNullifier.inputs[0] <== signature;
+    computedNullifier.inputs[1] <== password;
+	computedNullifier.inputs[2] <== electionId[0];
+	computedNullifier.inputs[3] <== electionId[1];
+
+    component checkNullifier = ForceEqualIfEnabled();
 	checkNullifier.enabled <== 1;
 	checkNullifier.in[0] <== computedNullifier.out;
 	checkNullifier.in[1] <== nullifier;
 }
+
+// component main { public [ electionId, nullifier, availableWeight, voteHash, cikRoot, censusRoot ] } = ZkFranchiseProofCircuit(160);

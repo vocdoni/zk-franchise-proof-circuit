@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/frankban/quicktest v1.14.4
+	github.com/iden3/go-iden3-crypto v0.0.13
 	go.vocdoni.io/dvote v1.0.4-0.20230307085219-8a6c8d64d8e9
 )
 
@@ -16,7 +17,6 @@ require (
 	github.com/cockroachdb/logtags v0.0.0-20211118104740-dabe8e521a4f // indirect
 	github.com/cockroachdb/pebble v0.0.0-20221021145029-f34af25a0187 // indirect
 	github.com/cockroachdb/redact v1.1.3 // indirect
-	github.com/dchest/blake512 v1.0.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1 // indirect
 	github.com/ethereum/go-ethereum v1.10.26 // indirect
 	github.com/getsentry/sentry-go v0.12.0 // indirect
@@ -25,7 +25,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/iden3/go-iden3-crypto v0.0.13 // indirect
 	github.com/iden3/go-rapidsnark/prover v0.0.9 // indirect
 	github.com/iden3/go-rapidsnark/types v0.0.2 // indirect
 	github.com/iden3/go-rapidsnark/verifier v0.0.3 // indirect
@@ -33,8 +32,6 @@ require (
 	github.com/klauspost/compress v1.15.15 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_golang v1.13.1 // indirect
@@ -42,9 +39,7 @@ require (
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
-	github.com/rs/zerolog v1.28.0 // indirect
 	github.com/wasmerio/wasmer-go v1.0.4 // indirect
-	go.vocdoni.io/proto v1.14.1-0.20230303133214-7f1eadfe6264 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/exp v0.0.0-20230125214544-b3c2aaf6208d // indirect
 	golang.org/x/sys v0.4.0 // indirect
