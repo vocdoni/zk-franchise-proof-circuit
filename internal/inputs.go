@@ -9,7 +9,6 @@ import (
 	"github.com/iden3/go-iden3-crypto/poseidon"
 	"go.vocdoni.io/dvote/crypto/ethereum"
 	"go.vocdoni.io/dvote/tree/arbo"
-	"go.vocdoni.io/dvote/util"
 )
 
 type circuitInputs struct {
@@ -34,14 +33,11 @@ type circuitInputs struct {
 func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 	// test with dummy personal signature generated with metamask.github.io/test-dapp
 	msg := []byte("Example `personal_sign` message")
-	password := util.RandomBytes(32)
+	password, _ := new(big.Int).SetString("df8634ab3b14536cb7a6953b1128ec6742726483bc5bb13605891600fd5ec35b", 16)
 	availableWeight := big.NewInt(10)
-	signature, err := hex.DecodeString("3a7806f4e0b5bda625d465abf5639ba42ac9b91bafea3b800a4afff840be8d55333c286c7e21c91850a99efb5008847eaf653e3a5776f64f4d3b405afd5dcde61c")
-	if err != nil {
-		return circuitInputs{}, err
-	}
+	signature, _ := new(big.Int).SetString("3a7806f4e0b5bda625d465abf5639ba42ac9b91bafea3b800a4afff840be8d55333c286c7e21c91850a99efb5008847eaf653e3a5776f64f4d3b405afd5dcde61c", 16)
 	// get address from the signature
-	address, err := ethereum.AddrFromSignature(msg, signature)
+	address, err := ethereum.AddrFromSignature(msg, signature.Bytes())
 	if err != nil {
 		return circuitInputs{}, err
 	}
@@ -57,8 +53,8 @@ func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 	}
 	strCensusSiblings = append(strCensusSiblings, "0")
 	// ensure that the password and signature are in the FF
-	ffPassword := BytesToFF(password)
-	ffSignature := BytesToFF(signature)
+	ffPassword := BigToFF(password)
+	ffSignature := BigToFF(signature)
 	// calculate the cik => H(address, password, signature)
 	cik, err := poseidon.Hash([]*big.Int{
 		arbo.BytesToBigInt(address.Bytes()),
@@ -80,15 +76,17 @@ func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 	strCIKSiblings = append(strCIKSiblings, "0")
 	// generate the electionId and calculate nullifier =>
 	// H(signature, password, electionId)
-	electionId := BytesToArbo(util.RandomBytes(32))
-	nullifier, err := poseidon.Hash([]*big.Int{ffSignature, ffPassword, electionId[0], electionId[1]})
+	// electionId := BytesToArbo(util.RandomBytes(32))
+	electionId, _ := hex.DecodeString("7faeab7a7d250527d614e952ae8e446825bd1124c6def410844c7c383d1519a6")
+	ffElectionId := BytesToArbo(electionId)
+	nullifier, err := poseidon.Hash([]*big.Int{ffSignature, ffPassword, ffElectionId[0], ffElectionId[1]})
 	if err != nil {
 		return circuitInputs{}, err
 	}
 	// generate vote hash and encode inputs
 	voteHash := BytesToArbo(availableWeight.Bytes())
 	return circuitInputs{
-		ElectionId:      []string{electionId[0].String(), electionId[1].String()},
+		ElectionId:      []string{ffElectionId[0].String(), ffElectionId[1].String()},
 		Nullifier:       nullifier.String(),
 		AvailableWeight: availableWeight.String(),
 		VoteHash:        []string{voteHash[0].String(), voteHash[1].String()},

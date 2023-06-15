@@ -1,0 +1,14 @@
+{
+    "scripts": {
+        "build": "tsc -p tsconfig.json",
+        "example": "node dist/example.js"
+    },
+    "type": "module",
+    "dependencies": {
+        "circomlibjs": "^0.1.7",
+        "snarkjs": "^0.7.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.1.3"
+    }
+}
