@@ -17,7 +17,7 @@ type circuitInputs struct {
 	Nullifier       string   `json:"nullifier"`
 	AvailableWeight string   `json:"availableWeight"`
 	VoteHash        []string `json:"voteHash"`
-	CIKRoot         string   `json:"cikRoot"`
+	SikRoot         string   `json:"sikRoot"`
 	CensusRoot      string   `json:"censusRoot"`
 
 	// Private inputs
@@ -27,7 +27,7 @@ type circuitInputs struct {
 
 	VoteWeight     string   `json:"voteWeight"`
 	CensusSiblings []string `json:"censusSiblings"`
-	CIKSiblings    []string `json:"cikSiblings"`
+	SikSiblings    []string `json:"sikSiblings"`
 }
 
 func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
@@ -55,8 +55,8 @@ func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 	// ensure that the password and signature are in the FF
 	ffPassword := BigToFF(password)
 	ffSignature := BigToFF(signature)
-	// calculate the cik => H(address, password, signature)
-	cik, err := poseidon.Hash([]*big.Int{
+	// calculate the sik => H(address, password, signature)
+	sik, err := poseidon.Hash([]*big.Int{
 		arbo.BytesToBigInt(address.Bytes()),
 		ffPassword,
 		ffSignature,
@@ -64,16 +64,16 @@ func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 	if err != nil {
 		return circuitInputs{}, err
 	}
-	// generate tree for the cik's
-	cikRoot, _, cikSiblings, err := GenTree("cik", address.Bytes(), arbo.BigIntToBytes(arbo.HashFunctionPoseidon.Len(), cik), 10)
+	// generate tree for the sik's
+	sikRoot, _, sikSiblings, err := GenTree("sik", address.Bytes(), arbo.BigIntToBytes(arbo.HashFunctionPoseidon.Len(), sik), 10)
 	if err != nil {
 		return circuitInputs{}, err
 	}
-	strCIKSiblings := make([]string, len(cikSiblings))
-	for i, s := range cikSiblings {
-		strCIKSiblings[i] = s.String()
+	strsikSiblings := make([]string, len(sikSiblings))
+	for i, s := range sikSiblings {
+		strsikSiblings[i] = s.String()
 	}
-	strCIKSiblings = append(strCIKSiblings, "0")
+	strsikSiblings = append(strsikSiblings, "0")
 	// generate the electionId and calculate nullifier =>
 	// H(signature, password, electionId)
 	// electionId := BytesToArbo(util.RandomBytes(32))
@@ -90,7 +90,7 @@ func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 		Nullifier:       nullifier.String(),
 		AvailableWeight: availableWeight.String(),
 		VoteHash:        []string{voteHash[0].String(), voteHash[1].String()},
-		CIKRoot:         cikRoot.String(),
+		SikRoot:         sikRoot.String(),
 		CensusRoot:      censusRoot.String(),
 
 		Address:   arbo.BytesToBigInt(address.Bytes()).String(),
@@ -99,7 +99,7 @@ func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 
 		VoteWeight:     big.NewInt(5).String(),
 		CensusSiblings: strCensusSiblings,
-		CIKSiblings:    strCIKSiblings,
+		SikSiblings:    strsikSiblings,
 	}, nil
 }
 
