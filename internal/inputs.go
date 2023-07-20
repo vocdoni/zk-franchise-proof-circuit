@@ -3,7 +3,6 @@ package internal
 import (
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"log"
 	"math/big"
 
@@ -18,7 +17,7 @@ type circuitInputs struct {
 	Nullifier       string   `json:"nullifier"`
 	AvailableWeight string   `json:"availableWeight"`
 	VoteHash        []string `json:"voteHash"`
-	CIKRoot         string   `json:"cikRoot"`
+	SikRoot         string   `json:"sikRoot"`
 	CensusRoot      string   `json:"censusRoot"`
 
 	// Private inputs
@@ -28,22 +27,18 @@ type circuitInputs struct {
 
 	VoteWeight     string   `json:"voteWeight"`
 	CensusSiblings []string `json:"censusSiblings"`
-	CIKSiblings    []string `json:"cikSiblings"`
+	SikSiblings    []string `json:"sikSiblings"`
 }
 
 func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 	msg := []byte("Vocdoni Sik Seed")
 	availableWeight := big.NewInt(10)
 
-	electionId, _ := hex.DecodeString("7faeab7a7d250527d614e952ae8e446825bd1124c6def410844c7c383d1519a6")
 	account := ethereum.NewSignKeys()
 	if err := account.Generate(); err != nil {
 		return circuitInputs{}, err
 	}
-	privKey := account.PrivateKey()
 	signature, _ := account.SignEthereum(msg)
-	log.Printf("Election: 0x%s\nAccount:\n\t- Address: %s\n\t- PrivKey: %s\n\t- Signature: %x\n",
-		electionId, account.Address().String(), privKey.String(), signature)
 
 	// generate tree for the census
 	censusRoot, _, censusSiblings, err := GenTree("census", account.Address().Bytes(), availableWeight.Bytes(), 10)
@@ -60,7 +55,11 @@ func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 	if err != nil {
 		return circuitInputs{}, err
 	}
-	fmt.Println(hex.EncodeToString(accountSik))
+	privKey := account.PrivateKey()
+	electionId, _ := hex.DecodeString("7faeab7a7d250527d614e952ae8e446825bd1124c6def410844c7c383d1519a6")
+	log.Printf("\nElection: 0x%x\nAccount:\n - Address: %s\n - PrivKey: 0x%s\n - Signature: 0x%x\n - SIK: 0x%x\n\n",
+		electionId, account.Address().String(), privKey.String(), signature, accountSik)
+
 	sikRoot, _, sikSiblings, err := GenTree("sik", account.Address().Bytes(), accountSik, 10)
 	if err != nil {
 		return circuitInputs{}, err
@@ -85,7 +84,7 @@ func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 		Nullifier:       new(big.Int).SetBytes(nullifier).String(),
 		AvailableWeight: availableWeight.String(),
 		VoteHash:        []string{voteHash[0].String(), voteHash[1].String()},
-		CIKRoot:         sikRoot.String(),
+		SikRoot:         sikRoot.String(),
 		CensusRoot:      censusRoot.String(),
 
 		Address:   arbo.BytesToBigInt(account.Address().Bytes()).String(),
@@ -94,7 +93,7 @@ func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 
 		VoteWeight:     big.NewInt(5).String(),
 		CensusSiblings: strCensusSiblings,
-		CIKSiblings:    strSIKSiblings,
+		SikSiblings:    strSIKSiblings,
 	}, nil
 }
 

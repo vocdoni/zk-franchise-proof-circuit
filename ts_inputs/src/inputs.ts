@@ -21,8 +21,8 @@ export async function GenerateCircuitInputs(
     signature : string, 
     voteWeight : string,
     availableWeight : string,
-    cikRoot : string,
-    cikSiblings : string[],
+    sikRoot : string,
+    sikSiblings : string[],
     censusRoot : string,
     censusSiblings : string[]) : Promise<any> {
     
@@ -38,7 +38,7 @@ export async function GenerateCircuitInputs(
         nullifier: nullifier.toString(),
         availableWeight,
         voteHash: await arbo.toHash(hex.fromBigInt(BigInt(availableWeight))),
-        cikRoot,
+        sikRoot,
         censusRoot,
         
         // private inputs
@@ -47,7 +47,7 @@ export async function GenerateCircuitInputs(
         signature: ffsignature,
         
         voteWeight,
-        cikSiblings,
+        sikSiblings,
         censusSiblings,
     }
 }

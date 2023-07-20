@@ -84,7 +84,7 @@ compile_circuit() {
 
 	CIRCUITCODE="pragma circom 2.0.0;
 include \"$CIRCUIT\";
-component main { public [ electionId, nullifier, availableWeight, voteHash, cikRoot, censusRoot ] } = ZkFranchiseProofCircuit($NLEVELS);"
+component main { public [ electionId, nullifier, availableWeight, voteHash, sikRoot, censusRoot ] } = ZkFranchiseProofCircuit($NLEVELS);"
 	echo "$CIRCUITCODE" > $TRASH/circuit.circom
 
 	# compilling the circuit
@@ -171,8 +171,8 @@ main() {
 	initial_setup
 	power_of_tau
 
-	versions=( 3 4 10 16 160 )
-	# versions=( 160 )
+	# versions=( 3 4 10 16 160 )
+	versions=( 160 )
 	for nlevels in "${versions[@]}"
 	do
 		compile_circuit $nlevels || error "error compiling circuits for $nlevels leves and $ENVIRONMENT environment"

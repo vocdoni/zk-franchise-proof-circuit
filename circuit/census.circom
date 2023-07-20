@@ -23,9 +23,9 @@ include "node_modules/circomlib/circuits/smt/smtverifier.circom";
                            │   ┌─────────────────▶key                 │  │ │
                            │   │               ┌─▶value               │  │ │
                            │   │               │ │         SMTVerifier├──│─┘
-          (pub) cikRoot────│─────────────────────▶root                │  │
+          (pub) sikRoot────│─────────────────────▶root                │  │
                            │   ┌─────────────────▶siblings            │  │
-     (priv) cikSiblings────│───┘               │ └────────────────────┘  │
+     (priv) sikSiblings────│───┘               │ └────────────────────┘  │
                            │   │               │                         │
                            │   │               │                         │
                            │   │               │                         │
@@ -55,7 +55,7 @@ template ZkFranchiseProofCircuit (nLevels) {
 	// Circom an input that is not used will be included in the constraints
 	// system and in the witness
     signal input voteHash[2];
-    signal input cikRoot;
+    signal input sikRoot;
     signal input censusRoot;
 
     signal input address;
@@ -64,30 +64,30 @@ template ZkFranchiseProofCircuit (nLevels) {
 
     signal input voteWeight;
     signal input censusSiblings[realNLevels];
-    signal input cikSiblings[realNLevels];
+    signal input sikSiblings[realNLevels];
     
     component checkWeight = LessEqThan(252);
     checkWeight.in[0] <== voteWeight;
     checkWeight.in[1] <== availableWeight;
     checkWeight.out === 1;
     
-    component cik = Poseidon(3);
-	cik.inputs[0] <== address;
-	cik.inputs[1] <== password;
-    cik.inputs[2] <== signature;
+    component sik = Poseidon(3);
+	sik.inputs[0] <== address;
+	sik.inputs[1] <== password;
+    sik.inputs[2] <== signature;
 
-    component cikVerifier = SMTVerifier(realNLevels);
-	cikVerifier.enabled <== 1;
-	cikVerifier.fnc <== 0; // 0 as is to verify inclusion
-	cikVerifier.root <== cikRoot;
+    component sikVerifier = SMTVerifier(realNLevels);
+	sikVerifier.enabled <== 1;
+	sikVerifier.fnc <== 0; // 0 as is to verify inclusion
+	sikVerifier.root <== sikRoot;
 	for (var i=0; i<realNLevels; i++) {
-		cikVerifier.siblings[i] <== cikSiblings[i];
+		sikVerifier.siblings[i] <== sikSiblings[i];
 	}
-	cikVerifier.oldKey <== 0;
-	cikVerifier.oldValue <== 0;
-	cikVerifier.isOld0 <== 0;
-	cikVerifier.key <== address;
-	cikVerifier.value <== cik.out;
+	sikVerifier.oldKey <== 0;
+	sikVerifier.oldValue <== 0;
+	sikVerifier.isOld0 <== 0;
+	sikVerifier.key <== address;
+	sikVerifier.value <== sik.out;
 
     component censusVerifier = SMTVerifier(realNLevels);
 	censusVerifier.enabled <== 1;
@@ -114,4 +114,4 @@ template ZkFranchiseProofCircuit (nLevels) {
 	checkNullifier.in[1] <== nullifier;
 }
 
-// component main { public [ electionId, nullifier, availableWeight, voteHash, cikRoot, censusRoot ] } = ZkFranchiseProofCircuit(160);
+// component main { public [ electionId, nullifier, availableWeight, voteHash, sikRoot, censusRoot ] } = ZkFranchiseProofCircuit(160);
