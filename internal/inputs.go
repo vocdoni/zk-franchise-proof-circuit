@@ -3,11 +3,12 @@ package internal
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log"
 	"math/big"
 
-	"github.com/iden3/go-iden3-crypto/poseidon"
 	"go.vocdoni.io/dvote/crypto/ethereum"
+	"go.vocdoni.io/dvote/crypto/zk"
 	"go.vocdoni.io/dvote/tree/arbo"
 )
 
@@ -31,20 +32,22 @@ type circuitInputs struct {
 }
 
 func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
-	// test with dummy personal signature generated with metamask.github.io/test-dapp
-	msg := []byte("Example `personal_sign` message")
-	password, _ := new(big.Int).SetString("df8634ab3b14536cb7a6953b1128ec6742726483bc5bb13605891600fd5ec35b", 16)
+	msg := []byte("Vocdoni Sik Seed")
 	availableWeight := big.NewInt(10)
-	signature, _ := new(big.Int).SetString("3a7806f4e0b5bda625d465abf5639ba42ac9b91bafea3b800a4afff840be8d55333c286c7e21c91850a99efb5008847eaf653e3a5776f64f4d3b405afd5dcde61c", 16)
-	// get address from the signature
-	address, err := ethereum.AddrFromSignature(msg, signature.Bytes())
-	if err != nil {
+
+	electionId, _ := hex.DecodeString("7faeab7a7d250527d614e952ae8e446825bd1124c6def410844c7c383d1519a6")
+	account := ethereum.NewSignKeys()
+	if err := account.Generate(); err != nil {
 		return circuitInputs{}, err
 	}
+	privKey := account.PrivateKey()
+	signature, _ := account.SignEthereum(msg)
+	log.Printf("Election: 0x%s\nAccount:\n\t- Address: %s\n\t- PrivKey: %s\n\t- Signature: %x\n",
+		electionId, account.Address().String(), privKey.String(), signature)
+
 	// generate tree for the census
-	censusRoot, _, censusSiblings, err := GenTree("census", address.Bytes(), availableWeight.Bytes(), 10)
+	censusRoot, _, censusSiblings, err := GenTree("census", account.Address().Bytes(), availableWeight.Bytes(), 10)
 	if err != nil {
-		log.Fatal("0 - ", err)
 		return circuitInputs{}, err
 	}
 	strCensusSiblings := make([]string, len(censusSiblings))
@@ -52,34 +55,26 @@ func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 		strCensusSiblings[i] = s.String()
 	}
 	strCensusSiblings = append(strCensusSiblings, "0")
-	// ensure that the password and signature are in the FF
-	ffPassword := BigToFF(password)
-	ffSignature := BigToFF(signature)
-	// calculate the cik => H(address, password, signature)
-	cik, err := poseidon.Hash([]*big.Int{
-		arbo.BytesToBigInt(address.Bytes()),
-		ffPassword,
-		ffSignature,
-	})
+	// generate tree for the sik's
+	accountSik, err := account.Sik()
 	if err != nil {
 		return circuitInputs{}, err
 	}
-	// generate tree for the cik's
-	cikRoot, _, cikSiblings, err := GenTree("cik", address.Bytes(), arbo.BigIntToBytes(arbo.HashFunctionPoseidon.Len(), cik), 10)
+	fmt.Println(hex.EncodeToString(accountSik))
+	sikRoot, _, sikSiblings, err := GenTree("sik", account.Address().Bytes(), accountSik, 10)
 	if err != nil {
 		return circuitInputs{}, err
 	}
-	strCIKSiblings := make([]string, len(cikSiblings))
-	for i, s := range cikSiblings {
-		strCIKSiblings[i] = s.String()
+	strSIKSiblings := make([]string, len(sikSiblings))
+	for i, s := range sikSiblings {
+		strSIKSiblings[i] = s.String()
 	}
-	strCIKSiblings = append(strCIKSiblings, "0")
+	strSIKSiblings = append(strSIKSiblings, "0")
 	// generate the electionId and calculate nullifier =>
 	// H(signature, password, electionId)
 	// electionId := BytesToArbo(util.RandomBytes(32))
-	electionId, _ := hex.DecodeString("7faeab7a7d250527d614e952ae8e446825bd1124c6def410844c7c383d1519a6")
 	ffElectionId := BytesToArbo(electionId)
-	nullifier, err := poseidon.Hash([]*big.Int{ffSignature, ffPassword, ffElectionId[0], ffElectionId[1]})
+	nullifier, err := account.Nullifier(electionId, nil)
 	if err != nil {
 		return circuitInputs{}, err
 	}
@@ -87,19 +82,19 @@ func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 	voteHash := BytesToArbo(availableWeight.Bytes())
 	return circuitInputs{
 		ElectionId:      []string{ffElectionId[0].String(), ffElectionId[1].String()},
-		Nullifier:       nullifier.String(),
+		Nullifier:       new(big.Int).SetBytes(nullifier).String(),
 		AvailableWeight: availableWeight.String(),
 		VoteHash:        []string{voteHash[0].String(), voteHash[1].String()},
-		CIKRoot:         cikRoot.String(),
+		CIKRoot:         sikRoot.String(),
 		CensusRoot:      censusRoot.String(),
 
-		Address:   arbo.BytesToBigInt(address.Bytes()).String(),
-		Password:  ffPassword.String(),
-		Signature: ffSignature.String(),
+		Address:   arbo.BytesToBigInt(account.Address().Bytes()).String(),
+		Password:  "0",
+		Signature: zk.BigToFF(new(big.Int).SetBytes(signature)).String(),
 
 		VoteWeight:     big.NewInt(5).String(),
 		CensusSiblings: strCensusSiblings,
-		CIKSiblings:    strCIKSiblings,
+		CIKSiblings:    strSIKSiblings,
 	}, nil
 }
 
