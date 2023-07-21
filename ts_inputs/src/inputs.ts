@@ -35,10 +35,22 @@ async function calcSik(address, personal_sign : string, password : string = "0")
     return arbo.toString(poseidon.F.toObject(hash));
 }
 
-async function testSik(testAddress, testSignature : string) {
-    const sik = await calcSik(testAddress, testSignature);
-    console.log("sik", sik);
-}
+export interface CircuitInputs {
+    // public inputs
+    electionId: string[];
+    nullifier: string;
+    availableWeight: string;
+    voteHash: string[];
+    sikRoot: string;
+    censusRoot: string;
+    // private inputs
+    address: string;
+    password: string;
+    signature: string;
+    voteWeight: string;
+    sikSiblings: string[];
+    censusSiblings: string[];
+  }
 
 export async function GenerateCircuitInputs(
     electionId : string, 
@@ -50,21 +62,20 @@ export async function GenerateCircuitInputs(
     sikRoot : string,
     sikSiblings : string[],
     censusRoot : string,
-    censusSiblings : string[]) : Promise<any> {
-    await testSik(address, personal_sign);
-
+    censusSiblings : string[]) : Promise<CircuitInputs> {
     const arboElectionId = await arbo.toHash(electionId);
     const signature = signatureToVocdoniSikSignature(personal_sign);
-
     const ffsignature = ff.hexToFFBigInt(signature).toString();
     const ffpassword = ff.hexToFFBigInt(password).toString();
-    const nullifier = await calcNullifier(ffsignature, ffpassword, arboElectionId);
-    return {
+    return Promise.all([
+        calcNullifier(ffsignature, ffpassword, arboElectionId),
+        arbo.toHash(hex.fromBigInt(BigInt(availableWeight)))
+    ]).then((data) => ({
         // public inputs
-        electionId: await arbo.toHash(electionId),
-        nullifier: nullifier.toString(),
+        electionId: arboElectionId,
+        nullifier: data[0].toString(),
         availableWeight,
-        voteHash: await arbo.toHash(hex.fromBigInt(BigInt(availableWeight))),
+        voteHash: data[1],
         sikRoot,
         censusRoot,
         // private inputs
@@ -74,5 +85,5 @@ export async function GenerateCircuitInputs(
         voteWeight,
         sikSiblings,
         censusSiblings,
-    }
+    }));
 }

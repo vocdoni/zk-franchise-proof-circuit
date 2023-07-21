@@ -1,4 +1,3 @@
-
 export function fromBigInt(bi : bigint): string {
     const hex = bi.toString(16);
     return (hex.length % 2 != 0) ? "0" + hex : hex;
