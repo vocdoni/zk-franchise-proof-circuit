@@ -1,6 +1,6 @@
 module github.com/vocdoni/zk-franchise-proof-circuit
 
-go 1.18
+go 1.20
 
 require (
 	github.com/frankban/quicktest v1.14.5
