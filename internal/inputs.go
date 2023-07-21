@@ -31,14 +31,13 @@ type circuitInputs struct {
 }
 
 func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
-	msg := []byte("Vocdoni Sik Seed")
 	availableWeight := big.NewInt(10)
 
 	account := ethereum.NewSignKeys()
 	if err := account.Generate(); err != nil {
 		return circuitInputs{}, err
 	}
-	signature, _ := account.SignEthereum(msg)
+	signature, _ := account.SignVocdoniSik()
 
 	// generate tree for the census
 	censusRoot, _, censusSiblings, err := GenTree("census", account.Address().Bytes(), availableWeight.Bytes(), 10)
@@ -71,7 +70,6 @@ func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 	strSIKSiblings = append(strSIKSiblings, "0")
 	// generate the electionId and calculate nullifier =>
 	// H(signature, password, electionId)
-	// electionId := BytesToArbo(util.RandomBytes(32))
 	ffElectionId := BytesToArbo(electionId)
 	nullifier, err := account.Nullifier(electionId, nil)
 	if err != nil {

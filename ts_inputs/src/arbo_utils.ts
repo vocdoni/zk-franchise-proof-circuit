@@ -1,9 +1,15 @@
-import { toArrayBuffer, fromArrayBuffer } from "./hex.js";
+import { toArrayBuffer, fromArrayBuffer, fromBigInt } from "./hex.js";
 
 export function toBigInt(str : string): bigint {
     const strBuff = toArrayBuffer(str);
     const hexArbo = fromArrayBuffer(strBuff.reverse());
     return BigInt("0x"+ hexArbo);
+}
+
+export function toString(n : bigint): string {
+    const nStr = fromBigInt(n);
+    const nBuff = toArrayBuffer(nStr);
+    return fromArrayBuffer(nBuff.reverse());
 }
 
 export async function toHash(input : string): Promise<string[]> {    

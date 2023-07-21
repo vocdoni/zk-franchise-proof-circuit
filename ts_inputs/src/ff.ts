@@ -10,6 +10,9 @@ export function bigIntToFF(bi : bigint): bigint {
 }
 
 export function hexToFFBigInt(hexStr : string): bigint {
-    const bi = BigInt("0x" + hexStr)
+    if (hexStr == null || hexStr == "" || hexStr == "0") {
+        return 0n;
+    }
+    const bi = BigInt("0x" + hexStr);
     return bigIntToFF(bi);
 }
