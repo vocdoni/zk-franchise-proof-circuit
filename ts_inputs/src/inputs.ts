@@ -50,7 +50,7 @@ export interface CircuitInputs {
     voteWeight: string;
     sikSiblings: string[];
     censusSiblings: string[];
-  }
+}
 
 export async function GenerateCircuitInputs(
     electionId : string, 

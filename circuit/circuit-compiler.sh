@@ -84,7 +84,7 @@ compile_circuit() {
 
 	CIRCUITCODE="pragma circom 2.0.0;
 include \"$CIRCUIT\";
-component main { public [ electionId, nullifier, availableWeight, voteHash, sikRoot, censusRoot ] } = ZkFranchiseProofCircuit($NLEVELS);"
+component main { public [ electionId, nullifier, voteWeight, voteHash, sikRoot, censusRoot ] } = ZkFranchiseProofCircuit($NLEVELS);"
 	echo "$CIRCUITCODE" > $TRASH/circuit.circom
 
 	# compilling the circuit
