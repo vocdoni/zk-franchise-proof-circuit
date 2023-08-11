@@ -280,10 +280,10 @@ github.com/yudai/pp v2.0.1+incompatible/go.mod h1:PuxR/8QJ7cyCkFp/aUDS+JY727OFEZ
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
-go.vocdoni.io/dvote v1.7.1-0.20230721155412-969a7c7bcecb h1:11CTzo3C54jJO21OAAGnPsEtfIZzR/V71aKGAUhkX+c=
-go.vocdoni.io/dvote v1.7.1-0.20230721155412-969a7c7bcecb/go.mod h1:QASaxILJyEQX3mjRnzoSzgq/6VHOZsXL7C6bUzYRzeI=
-go.vocdoni.io/proto v1.14.5-0.20230707085040-f040f02c5dcd h1:yyZ0dJi8zlvJ7fm21tp9ya1thyq5nSqBWq9Lqv+yxOA=
-go.vocdoni.io/proto v1.14.5-0.20230707085040-f040f02c5dcd/go.mod h1:oi/WtiBFJ6QwNDv2aUQYwOnUKzYuS/fBqXF8xDNwcGo=
+go.vocdoni.io/dvote v1.7.1-0.20230811121242-379d7356fa06 h1:tm+0meF+lK0KdyyPqHqlCrSqVDupBpIat0gIFz7JAfQ=
+go.vocdoni.io/dvote v1.7.1-0.20230811121242-379d7356fa06/go.mod h1:RqPr6QA/ua2RsPN0TSt8nRQ0TU9dJyMpaa7menV81hc=
+go.vocdoni.io/proto v1.14.6-0.20230802094125-e07a41fda290 h1:o5MrI+nI5GJDUYMEdzP/JJbMwdiOU1mr1LnrmXaN2q4=
+go.vocdoni.io/proto v1.14.6-0.20230802094125-e07a41fda290/go.mod h1:oi/WtiBFJ6QwNDv2aUQYwOnUKzYuS/fBqXF8xDNwcGo=
 golang.org/x/crypto v0.0.0-20181203042331-505ab145d0a9/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4/go.mod h1:yigFU9vqHzYiE8UmvKecakEJjdnWj3jj499lnFckfCI=

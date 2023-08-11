@@ -37,7 +37,8 @@ func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 	if err := account.Generate(); err != nil {
 		return circuitInputs{}, err
 	}
-	signature, _ := account.SignVocdoniSik()
+	signature, _ := account.SIKsignature()
+	password := []byte("password123")
 
 	// generate tree for the census
 	censusRoot, _, censusSiblings, err := GenTree("census", account.Address().Bytes(), availableWeight.Bytes(), 10)
@@ -50,7 +51,8 @@ func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 	}
 	strCensusSiblings = append(strCensusSiblings, "0")
 	// generate tree for the sik's
-	accountSik, err := account.Sik()
+
+	accountSik, err := account.AccountSIK(password)
 	if err != nil {
 		return circuitInputs{}, err
 	}
@@ -71,7 +73,7 @@ func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 	// generate the electionId and calculate nullifier =>
 	// H(signature, password, electionId)
 	ffElectionId := BytesToArbo(electionId)
-	nullifier, err := account.Nullifier(electionId, nil)
+	nullifier, err := account.AccountSIKnullifier(electionId, password)
 	if err != nil {
 		return circuitInputs{}, err
 	}
@@ -86,7 +88,7 @@ func MockInputs(nLevels, nKeys int) (circuitInputs, error) {
 		CensusRoot:      censusRoot.String(),
 
 		Address:   arbo.BytesToBigInt(account.Address().Bytes()).String(),
-		Password:  "0",
+		Password:  zk.BigToFF(new(big.Int).SetBytes(password)).String(),
 		Signature: zk.BigToFF(new(big.Int).SetBytes(signature)).String(),
 
 		VoteWeight:     big.NewInt(5).String(),

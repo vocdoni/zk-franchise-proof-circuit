@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/frankban/quicktest v1.14.5
-	go.vocdoni.io/dvote v1.7.1-0.20230721155412-969a7c7bcecb
+	go.vocdoni.io/dvote v1.7.1-0.20230811121242-379d7356fa06
 )
 
 require (
@@ -45,7 +45,7 @@ require (
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/rs/zerolog v1.29.1 // indirect
 	github.com/wasmerio/wasmer-go v1.0.4 // indirect
-	go.vocdoni.io/proto v1.14.5-0.20230707085040-f040f02c5dcd // indirect
+	go.vocdoni.io/proto v1.14.6-0.20230802094125-e07a41fda290 // indirect
 	golang.org/x/crypto v0.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230420155640-133eef4313cb // indirect
 	golang.org/x/sys v0.10.0 // indirect
