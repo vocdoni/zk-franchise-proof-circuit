@@ -84,7 +84,7 @@ compile_circuit() {
 
 	CIRCUITCODE="pragma circom 2.0.0;
 include \"$CIRCUIT\";
-component main {public [processId, censusRoot, nullifier, voteHash, votingWeight]} = Census($NLEVELS);"
+component main { public [ electionId, nullifier, voteWeight, voteHash, sikRoot, censusRoot ] } = ZkFranchiseProofCircuit($NLEVELS);"
 	echo "$CIRCUITCODE" > $TRASH/circuit.circom
 
 	# compilling the circuit
@@ -101,22 +101,38 @@ generate_proving_key() {
 	mkdir -p $TRASH/$ENVIRONMENT/$NLEVELS
 	log "computing proving and verification keys..."
 
+	# # create the trusted setup
+	# $SNARKJS plonk setup $ARTIFACTS/$ENVIRONMENT/$NLEVELS/circuit.r1cs $TRASH/pot20.ptau $ARTIFACTS/$ENVIRONMENT/$NLEVELS/proving_key.zkey
+	# log "[1/2]"
+	# # export verification key
+	# $SNARKJS zkey export verificationkey $ARTIFACTS/$ENVIRONMENT/$NLEVELS/proving_key.zkey $ARTIFACTS/$ENVIRONMENT/$NLEVELS/verification_key.json
+	# log "[2/2]"
+
 	# create the trusted setup
 	$SNARKJS groth16 setup $ARTIFACTS/$ENVIRONMENT/$NLEVELS/circuit.r1cs $TRASH/pot12_final.ptau $TRASH/$ENVIRONMENT/$NLEVELS/circuit_0000.zkey
+	log "[1/9]"
 	# perform the first contribution
 	$SNARKJS zkey contribute $TRASH/$ENVIRONMENT/$NLEVELS/circuit_0000.zkey $TRASH/$ENVIRONMENT/$NLEVELS/circuit_0001.zkey --name="1st Contribution" -v -e=random2
+	log "[2/9]"
 	# perform the second contribution
 	$SNARKJS zkey contribute $TRASH/$ENVIRONMENT/$NLEVELS/circuit_0001.zkey $TRASH/$ENVIRONMENT/$NLEVELS/circuit_0002.zkey --name="2nd Contribution" -v -e=random2
+	log "[3/9]"
 	# perform the third contribution (external)
 	$SNARKJS zkey export bellman $TRASH/$ENVIRONMENT/$NLEVELS/circuit_0002.zkey $TRASH/$ENVIRONMENT/$NLEVELS/challenge_phase2_0003
+	log "[4/9]"
 	$SNARKJS zkey bellman contribute bn128 $TRASH/$ENVIRONMENT/$NLEVELS/challenge_phase2_0003 $TRASH/$ENVIRONMENT/$NLEVELS/response_phase2_0003 -e="some random text"
+	log "[5/9]"
 	$SNARKJS zkey import bellman $TRASH/$ENVIRONMENT/$NLEVELS/circuit_0002.zkey $TRASH/$ENVIRONMENT/$NLEVELS/response_phase2_0003 $TRASH/$ENVIRONMENT/$NLEVELS/circuit_0003.zkey -n="3rd Contribution"
+	log "[6/9]"
 	# apply a random beacon
 	$SNARKJS zkey beacon $TRASH/$ENVIRONMENT/$NLEVELS/circuit_0003.zkey $ARTIFACTS/$ENVIRONMENT/$NLEVELS/proving_key.zkey 0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f 10 -n="Final Beacon phase2"
+	log "[7/9]"
 	# verify the final zkey
 	$SNARKJS zkey verify $ARTIFACTS/$ENVIRONMENT/$NLEVELS/circuit.r1cs $TRASH/pot12_final.ptau $ARTIFACTS/$ENVIRONMENT/$NLEVELS/proving_key.zkey
+	log "[8/9]"
 	# export verification key
 	$SNARKJS zkey export verificationkey $ARTIFACTS/$ENVIRONMENT/$NLEVELS/proving_key.zkey $ARTIFACTS/$ENVIRONMENT/$NLEVELS/verification_key.json
+	log "[9/9]"
 }
 
 # compute the hashes of the files generated and store into a markdown file to be consulted
@@ -155,7 +171,8 @@ main() {
 	initial_setup
 	power_of_tau
 
-	versions=( 3 4 10 16 160 )
+	# versions=( 3 4 10 16 160 )
+	versions=( 160 )
 	for nlevels in "${versions[@]}"
 	do
 		compile_circuit $nlevels || error "error compiling circuits for $nlevels leves and $ENVIRONMENT environment"

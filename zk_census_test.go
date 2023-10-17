@@ -1,21 +1,14 @@
-package main
+package zkfranchiseproofcircuit
 
 import (
-	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"math/big"
 	"os"
 	"strconv"
 	"testing"
 
 	qt "github.com/frankban/quicktest"
-	"go.vocdoni.io/dvote/crypto/zk"
-	"go.vocdoni.io/dvote/crypto/zk/circuit"
+	"github.com/vocdoni/zk-franchise-proof-circuit/internal"
 	"go.vocdoni.io/dvote/crypto/zk/prover"
-	"go.vocdoni.io/dvote/db"
-	"go.vocdoni.io/dvote/db/pebbledb"
-	"go.vocdoni.io/dvote/tree/arbo"
 )
 
 func getEnvVars(t *testing.T) (string, string, int, int, int) {
@@ -70,67 +63,11 @@ func Test_genInputs(t *testing.T) {
 		"nPaddingLeafs": nPaddingLeafs,
 	})
 
-	// Generate the ZkAddress
-	needlePrivateKey := "6430ab787ad5130942369901498a118fade013ebab5450efbfb6acac66d8fb88"
-	zkAddr, err := zk.AddressFromString(needlePrivateKey)
-	c.Assert(err, qt.IsNil)
-
-	// Create a census tree
-	database, err := pebbledb.New(db.Options{Path: c.TempDir()})
-	c.Assert(err, qt.IsNil)
-	censusTree, err := arbo.NewTree(arbo.Config{
-		Database:     database,
-		MaxLevels:    nLevels,
-		HashFunction: arbo.HashFunctionPoseidon,
-	})
-	c.Assert(err, qt.IsNil)
-
-	// Define a weight and add it with the public key to the census
-	votingWeight := new(big.Int).SetInt64(10)
-	factoryWeight := new(big.Int).SetInt64(20)
-	encFactoryWeight := arbo.BigIntToBytes(arbo.HashFunctionPoseidon.Len(), factoryWeight)
-	err = censusTree.Add(zkAddr.Bytes(), encFactoryWeight)
-	c.Assert(err, qt.IsNil)
-
-	// Add extra voters to the census
-	for i := 0; i < nPaddingLeafs; i++ {
-		mockZkAddr, err := zk.NewRandAddress()
-		c.Assert(err, qt.IsNil)
-
-		err = censusTree.Add(mockZkAddr.Bytes(), encFactoryWeight)
-		c.Assert(err, qt.IsNil)
-	}
-
-	// Get the CensusProof => {key, value, siblings}
-	leafKey, leafValue, packedSiblings, exists, err := censusTree.GenProof(zkAddr.Bytes())
-	c.Assert(leafKey, qt.ContentEquals, []byte(zkAddr.Bytes()))
-	c.Assert(leafValue, qt.DeepEquals, encFactoryWeight)
-	c.Assert(exists, qt.IsTrue)
-	c.Assert(err, qt.IsNil)
-
-	currentSiblings, err := arbo.UnpackSiblings(arbo.HashFunctionPoseidon, packedSiblings)
-	c.Assert(err, qt.IsNil)
-	strSiblings := make([]string, nLevels+1)
-	for i := 0; i < len(strSiblings); i++ {
-		strSibling := "0"
-		if i < len(currentSiblings) {
-			strSibling = arbo.BytesToBigInt(currentSiblings[i]).String()
-		}
-		strSiblings[i] = strSibling
-	}
-
-	// Get the CensusRoot
-	electionId, _ := hex.DecodeString("c5d2460186f760d51371516148fd334b4199052f01538553aa9a020200000000")
-	censusRoot, err := censusTree.Root()
-	c.Assert(err, qt.IsNil)
-
-	rawInputs, err := circuit.GenerateCircuitInput(zkAddr, censusRoot, electionId, factoryWeight, votingWeight, strSiblings)
-	c.Assert(err, qt.IsNil)
-	jsonInputs, err := json.Marshal(rawInputs)
+	inputs, err := internal.MockInputs(nLevels, 10)
 	c.Assert(err, qt.IsNil)
 
 	output := fmt.Sprintf("./artifacts/%s/%s/%d/inputs_example.json", name, env, nLevels)
-	err = os.WriteFile(output, jsonInputs, 0644)
+	err = os.WriteFile(output, inputs.Bytes(), 0644)
 	c.Assert(err, qt.IsNil)
 }
 

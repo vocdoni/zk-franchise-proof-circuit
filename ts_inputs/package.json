@@ -1,0 +1,16 @@
+{
+    "scripts": {
+        "build": "tsc -p tsconfig.json",
+        "example": "node dist/example.js"
+    },
+    "type": "module",
+    "dependencies": {
+        "@ethersproject/sha2": "^5.7.0",
+        "buffer": "^6.0.3",
+        "circomlibjs": "^0.1.7",
+        "snarkjs": "^0.7.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.1.3"
+    }
+}
