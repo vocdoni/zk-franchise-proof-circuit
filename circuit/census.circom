@@ -52,7 +52,7 @@ template ZkFranchiseProofCircuit (nLevels) {
     signal input nullifier;
     signal input availableWeight;
     // voteHash is not operated inside the circuit, assuming that in
-	// Circom an input that is not used will be included in the constraints
+    // Circom an input that is not used will be included in the constraints
 	// system and in the witness
     signal input voteHash[2];
     signal input sikRoot;
@@ -114,4 +114,4 @@ template ZkFranchiseProofCircuit (nLevels) {
 	checkNullifier.in[1] <== nullifier;
 }
 
-// component main { public [ electionId, nullifier, availableWeight, voteHash, sikRoot, censusRoot ] } = ZkFranchiseProofCircuit(160);
+// component main { public [ electionId, nullifier, voteWeight, voteHash, sikRoot, censusRoot ] } = ZkFranchiseProofCircuit(160);
