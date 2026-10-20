@@ -1,6 +1,6 @@
 module github.com/vocdoni/zk-franchise-proof-circuit
 
-go 1.20
+go 1.24
 
 require (
 	github.com/frankban/quicktest v1.14.5
@@ -31,7 +31,7 @@ require (
 	github.com/iden3/go-rapidsnark/types v0.0.2 // indirect
 	github.com/iden3/go-rapidsnark/verifier v0.0.3 // indirect
 	github.com/iden3/go-rapidsnark/witness v0.0.3 // indirect
-	github.com/klauspost/compress v1.16.7 // indirect
+	github.com/klauspost/compress v1.18.7 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
